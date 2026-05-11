@@ -1,0 +1,463 @@
+// ============================================================
+// schema.prisma — Sistema de Administração Familiar
+// Versão: 1.0 | Fase 1 — Especificação
+// Banco: PostgreSQL | ORM: Prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ShoppingItemStatus {
+  PENDING
+  PURCHASED
+  CANCELLED
+}
+
+enum EntryType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+enum TransactionType {
+  EXPENSE
+  INCOME
+}
+
+enum EventType {
+  MEDICAL
+  SCHOOL
+  ROUTINE
+  APPOINTMENT
+  OTHER
+}
+
+enum EventStatus {
+  SCHEDULED
+  CONFIRMED
+  DONE
+  CANCELLED
+  RESCHEDULED
+}
+
+enum TaskFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  OCCASIONAL
+}
+
+enum TaskStatus {
+  PENDING
+  DONE
+  SKIPPED
+}
+
+enum AssignmentMethod {
+  MANUAL
+  ROTATION
+}
+
+enum NotificationType {
+  SHOPPING_ITEM_ADDED
+  STOCK_LOW
+  STOCK_EXPIRING
+  PAYMENT_DUE
+  EVENT_REMINDER
+  TASK_DUE
+  TASK_OVERDUE
+  REPORT_READY
+  CONFIRMATION_REQUEST
+  GENERAL
+}
+
+enum ReportType {
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum ReportStatus {
+  GENERATING
+  READY
+  SENT
+  FAILED
+}
+
+enum AiProvider {
+  OPENAI
+}
+
+// ============================================================
+// USUÁRIOS
+// ============================================================
+
+model User {
+  id             String    @id @default(cuid())
+  name           String
+  telegramId     String    @unique
+  telegramHandle String?
+  passwordHash   String
+  role           Role      @default(MEMBER)
+  avatarUrl      String?
+  isActive       Boolean   @default(true)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  shoppingRequests  ShoppingItem[]   @relation("RequestedBy")
+  shoppingPurchases ShoppingItem[]   @relation("PurchasedBy")
+  transactions      Transaction[]
+  taskAssignments   TaskAssignment[]
+  taskCompletions   TaskCompletion[]
+  eventAttendees    EventAttendee[]
+  inventoryEntries  InventoryEntry[]
+  notifications     Notification[]
+  aiLogs            AiLog[]
+
+  @@map("users")
+}
+
+// ============================================================
+// LISTA DE SUPERMERCADO
+// ============================================================
+
+model ShoppingList {
+  id        String    @id @default(cuid())
+  name      String    @default("Lista principal")
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  items ShoppingItem[]
+
+  @@map("shopping_lists")
+}
+
+model ShoppingItem {
+  id              String             @id @default(cuid())
+  name            String
+  quantity        Float              @default(1)
+  unit            String?
+  category        String?
+  priority        Priority           @default(MEDIUM)
+  status          ShoppingItemStatus @default(PENDING)
+  notes           String?
+  originalMessage String?
+  aiExtracted     Boolean            @default(false)
+  estimatedPrice  Decimal?           @db.Decimal(10, 2)
+  purchasedPrice  Decimal?           @db.Decimal(10, 2)
+  purchasedAt     DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  listId          String
+  list            ShoppingList   @relation(fields: [listId], references: [id])
+  requestedById   String
+  requestedBy     User           @relation("RequestedBy", fields: [requestedById], references: [id])
+  purchasedById   String?
+  purchasedBy     User?          @relation("PurchasedBy", fields: [purchasedById], references: [id])
+  inventoryItemId String?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  transaction     Transaction?
+
+  @@index([listId, status])
+  @@index([requestedById])
+  @@map("shopping_items")
+}
+
+// ============================================================
+// ESTOQUE
+// ============================================================
+
+model InventoryCategory {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  icon      String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  items InventoryItem[]
+
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id          String    @id @default(cuid())
+  name        String
+  quantity    Float     @default(0)
+  unit        String
+  minQuantity Float     @default(1)
+  location    String?
+  imageUrl    String?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  categoryId    String
+  category      InventoryCategory @relation(fields: [categoryId], references: [id])
+  entries       InventoryEntry[]
+  shoppingItems ShoppingItem[]
+
+  @@index([categoryId])
+  @@map("inventory_items")
+}
+
+model InventoryEntry {
+  id          String    @id @default(cuid())
+  type        EntryType
+  quantity    Float
+  notes       String?
+  expiresAt   DateTime?
+  imageUrl    String?
+  aiExtracted Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  itemId String
+  item   InventoryItem @relation(fields: [itemId], references: [id])
+  userId String
+  user   User          @relation(fields: [userId], references: [id])
+
+  @@index([itemId])
+  @@index([expiresAt])
+  @@map("inventory_entries")
+}
+
+// ============================================================
+// FINANCEIRO
+// ============================================================
+
+model TransactionCategory {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  type      TransactionType
+  color     String?
+  deletedAt DateTime?
+  createdAt DateTime        @default(now())
+
+  transactions Transaction[]
+
+  @@map("transaction_categories")
+}
+
+model Transaction {
+  id           String          @id @default(cuid())
+  description  String
+  amount       Decimal         @db.Decimal(10, 2)
+  type         TransactionType
+  dueDate      DateTime?
+  paidAt       DateTime?
+  isPaid       Boolean         @default(false)
+  isRecurring  Boolean         @default(false)
+  recurringDay Int?
+  notes        String?
+  receiptUrl   String?
+  aiExtracted  Boolean         @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  categoryId     String?
+  category       TransactionCategory? @relation(fields: [categoryId], references: [id])
+  userId         String
+  user           User                 @relation(fields: [userId], references: [id])
+  shoppingItemId String?              @unique
+  shoppingItem   ShoppingItem?        @relation(fields: [shoppingItemId], references: [id])
+
+  @@index([userId, type])
+  @@index([dueDate, isPaid])
+  @@map("transactions")
+}
+
+// ============================================================
+// AGENDAMENTOS
+// ============================================================
+
+model Event {
+  id            String      @id @default(cuid())
+  title         String
+  type          EventType
+  status        EventStatus @default(SCHEDULED)
+  description   String?
+  location      String?
+  startsAt      DateTime
+  endsAt        DateTime?
+  isRecurring   Boolean     @default(false)
+  recurringRule String?
+  documentUrl   String?
+  aiExtracted   Boolean     @default(false)
+  notes         String?
+  deletedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  attendees EventAttendee[]
+
+  @@index([startsAt, status])
+  @@map("events")
+}
+
+model EventAttendee {
+  id          String    @id @default(cuid())
+  confirmed   Boolean   @default(false)
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@map("event_attendees")
+}
+
+// ============================================================
+// RESPONSABILIDADES / TAREFAS
+// ============================================================
+
+model Task {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  frequency   TaskFrequency
+  effortScore Int           @default(1)
+  isActive    Boolean       @default(true)
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  assignments TaskAssignment[]
+
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id             String           @id @default(cuid())
+  dueDate        DateTime
+  method         AssignmentMethod @default(MANUAL)
+  notifiedAt     DateTime?
+  reminderSentAt DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime         @default(now())
+
+  taskId     String
+  task       Task            @relation(fields: [taskId], references: [id])
+  userId     String
+  user       User            @relation(fields: [userId], references: [id])
+  completion TaskCompletion?
+
+  @@index([userId, dueDate])
+  @@index([taskId])
+  @@map("task_assignments")
+}
+
+model TaskCompletion {
+  id          String     @id @default(cuid())
+  status      TaskStatus
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime   @default(now())
+
+  assignmentId String         @unique
+  assignment   TaskAssignment @relation(fields: [assignmentId], references: [id])
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("task_completions")
+}
+
+// ============================================================
+// NOTIFICAÇÕES
+// ============================================================
+
+model Notification {
+  id                String           @id @default(cuid())
+  type              NotificationType
+  title             String
+  message           String
+  sentAt            DateTime?
+  readAt            DateTime?
+  telegramMessageId Int?
+  createdAt         DateTime         @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId, sentAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// RELATÓRIOS
+// ============================================================
+
+model Report {
+  id        String       @id @default(cuid())
+  type      ReportType
+  status    ReportStatus @default(GENERATING)
+  period    String
+  fileUrl   String?
+  sentAt    DateTime?
+  payload   Json?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([type, status])
+  @@map("reports")
+}
+
+// ============================================================
+// LOGS DE IA
+// ============================================================
+
+model AiLog {
+  id               String     @id @default(cuid())
+  provider         AiProvider @default(OPENAI)
+  model            String
+  module           String
+  operation        String
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  estimatedCostUsd Decimal    @db.Decimal(10, 6)
+  latencyMs        Int
+  success          Boolean
+  errorMessage     String?
+  inputSummary     String?
+  outputSummary    String?
+  createdAt        DateTime   @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([module, createdAt])
+  @@index([userId])
+  @@map("ai_logs")
+}
