@@ -1,27 +1,27 @@
 import { Controller, Post, Body, Headers, UnauthorizedException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { TelegramService } from './telegram.service';
+import { WhatsAppService } from './whatsapp.service';
 import { ConfigService } from '@nestjs/config';
 
-@ApiTags('telegram')
-@Controller('telegram')
-export class TelegramController {
+@ApiTags('whatsapp')
+@Controller('whatsapp')
+export class WhatsAppController {
   constructor(
-    private telegramService: TelegramService,
+    private whatsapp: WhatsAppService,
     private config: ConfigService,
   ) {}
 
   @Post('webhook')
   async handleWebhook(
-    @Body() update: unknown,
-    @Headers('x-telegram-bot-api-secret-token') secret?: string,
+    @Body() payload: unknown,
+    @Headers('x-zapi-secret') secret?: string,
   ) {
-    const expectedSecret = this.config.get<string>('TELEGRAM_WEBHOOK_SECRET');
+    const expectedSecret = this.config.get<string>('ZAPI_WEBHOOK_SECRET');
     if (expectedSecret && secret !== expectedSecret) {
       throw new UnauthorizedException('Invalid webhook secret');
     }
 
-    await this.telegramService.handleWebhookUpdate(update);
+    await this.whatsapp.handleWebhook(payload as Parameters<WhatsAppService['handleWebhook']>[0]);
     return { ok: true };
   }
 }

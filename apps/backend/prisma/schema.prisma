@@ -116,10 +116,9 @@ enum AiProvider {
 
 model User {
   id             String    @id @default(cuid())
-  name           String
-  telegramId     String    @unique
-  telegramHandle String?
-  passwordHash   String
+  name         String
+  phone        String    @unique
+  passwordHash String
   role           Role      @default(MEMBER)
   avatarUrl      String?
   isActive       Boolean   @default(true)
@@ -401,10 +400,9 @@ model Notification {
   type              NotificationType
   title             String
   message           String
-  sentAt            DateTime?
-  readAt            DateTime?
-  telegramMessageId Int?
-  createdAt         DateTime         @default(now())
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
 
   userId String
   user   User   @relation(fields: [userId], references: [id])

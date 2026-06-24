@@ -10,7 +10,7 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { EventsModule } from './modules/events/events.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ReportsModule } from './modules/reports/reports.module';
-import { TelegramModule } from './modules/telegram/telegram.module';
+import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
@@ -28,7 +28,7 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
     EventsModule,
     TasksModule,
     ReportsModule,
-    TelegramModule,
+    WhatsAppModule,
     AiModule,
     NotificationsModule,
     WebsocketModule,

@@ -5,8 +5,7 @@ import { Role } from '@prisma/client';
 
 export interface CreateUserDto {
   name: string;
-  telegramId: string;
-  telegramHandle?: string;
+  phone: string;
   password: string;
   role?: Role;
   avatarUrl?: string;
@@ -14,7 +13,7 @@ export interface CreateUserDto {
 
 export interface UpdateUserDto {
   name?: string;
-  telegramHandle?: string;
+  phone?: string;
   avatarUrl?: string;
   isActive?: boolean;
 }
@@ -27,7 +26,7 @@ export class UsersService {
     return this.prisma.user.findMany({
       where: { deletedAt: null },
       select: {
-        id: true, name: true, telegramId: true, telegramHandle: true,
+        id: true, name: true, phone: true,
         role: true, avatarUrl: true, isActive: true, createdAt: true,
       },
     });
@@ -37,7 +36,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: { id, deletedAt: null },
       select: {
-        id: true, name: true, telegramId: true, telegramHandle: true,
+        id: true, name: true, phone: true,
         role: true, avatarUrl: true, isActive: true, createdAt: true, updatedAt: true,
       },
     });
@@ -46,17 +45,14 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto) {
-    const exists = await this.prisma.user.findUnique({
-      where: { telegramId: dto.telegramId },
-    });
-    if (exists) throw new ConflictException('Telegram ID já cadastrado');
+    const exists = await this.prisma.user.findUnique({ where: { phone: dto.phone } });
+    if (exists) throw new ConflictException('Número de WhatsApp já cadastrado');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
-        telegramId: dto.telegramId,
-        telegramHandle: dto.telegramHandle,
+        phone: dto.phone,
         passwordHash,
         role: dto.role ?? Role.MEMBER,
         avatarUrl: dto.avatarUrl,
@@ -73,7 +69,7 @@ export class UsersService {
       where: { id },
       data: dto,
       select: {
-        id: true, name: true, telegramId: true, telegramHandle: true,
+        id: true, name: true, phone: true,
         role: true, avatarUrl: true, isActive: true, updatedAt: true,
       },
     });

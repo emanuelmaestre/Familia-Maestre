@@ -19,7 +19,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
-      where: { telegramId: dto.telegramId, deletedAt: null },
+      where: { phone: dto.phone, deletedAt: null },
     });
 
     if (!user || !user.isActive) {

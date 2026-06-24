@@ -2,9 +2,9 @@ import { IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
-  @ApiProperty({ example: '123456789' })
+  @ApiProperty({ example: '5511999999999' })
   @IsString()
-  telegramId!: string;
+  phone!: string;
 
   @ApiProperty({ example: 'suaSenha123' })
   @IsString()
