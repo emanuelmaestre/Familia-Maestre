@@ -18,6 +18,13 @@
     "db:studio": "npm run prisma:studio --workspace=apps/backend"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^10.0.3"
+  },
+  "overrides": {
+    "multer": "^2.2.0",
+    "@nestjs/platform-express": {
+      "multer": "^2.2.0"
+    },
+    "postcss": "^8.5.15"
   }
 }
