@@ -1,30 +1,33 @@
+import { config } from 'dotenv';
+config({ path: '.env' });
+
 import { PrismaClient, Role } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DIRECT_URL ?? process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const passwordHash = await bcrypt.hash('familia@2024', 10);
 
   const admin = await prisma.user.upsert({
-    where: { telegramId: '000000001' },
+    where: { phone: '000000001' },
     update: {},
     create: {
       name: 'Admin Família',
-      telegramId: '000000001',
-      telegramHandle: 'admin_familia',
+      phone: '000000001',
       passwordHash,
       role: Role.ADMIN,
     },
   });
 
   const member = await prisma.user.upsert({
-    where: { telegramId: '000000002' },
+    where: { phone: '000000002' },
     update: {},
     create: {
       name: 'Membro Família',
-      telegramId: '000000002',
-      telegramHandle: 'membro_familia',
+      phone: '000000002',
       passwordHash,
       role: Role.MEMBER,
     },
@@ -70,17 +73,13 @@ async function main() {
     });
   }
 
-  const list = await prisma.shoppingList.upsert({
+  await prisma.shoppingList.upsert({
     where: { id: 'lista-principal' },
     update: {},
-    create: {
-      id: 'lista-principal',
-      name: 'Lista Principal',
-      isActive: true,
-    },
+    create: { id: 'lista-principal', name: 'Lista Principal', isActive: true },
   });
 
-  console.log('✅ Seed concluído:', { admin: admin.name, member: member.name, list: list.name });
+  console.log('✅ Seed concluído:', { admin: admin.name, member: member.name });
 }
 
 main()
