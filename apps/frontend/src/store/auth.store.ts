@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 interface User {
   id: string;
   name: string;
-  telegramId: string;
+  phone: string;
   role: 'ADMIN' | 'MEMBER';
   avatarUrl?: string | null;
 }
@@ -14,7 +14,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (telegramId: string, password: string) => Promise<void>;
+  login: (phone: string, password: string) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
 }
@@ -26,8 +26,8 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true,
 
-      login: async (telegramId, password) => {
-        const { data } = await api.post('/auth/login', { telegramId, password });
+      login: async (phone, password) => {
+        const { data } = await api.post('/auth/login', { phone, password });
         localStorage.setItem('access_token', data.accessToken);
         localStorage.setItem('refresh_token', data.refreshToken);
         set({ user: data.user, isAuthenticated: true, isLoading: false });

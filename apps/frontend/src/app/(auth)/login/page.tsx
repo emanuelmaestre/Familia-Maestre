@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 
 export default function LoginPage() {
-  const [telegramId, setTelegramId] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,10 +18,10 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(telegramId, password);
+      await login(phone, password);
       router.push('/dashboard');
     } catch {
-      setError('Telegram ID ou senha inválidos');
+      setError('Telefone ou senha inválidos');
     } finally {
       setLoading(false);
     }
@@ -39,14 +39,14 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Telegram ID
+              Telefone / WhatsApp
             </label>
             <input
               type="text"
-              value={telegramId}
-              onChange={(e) => setTelegramId(e.target.value)}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               required
-              placeholder="Seu Telegram ID"
+              placeholder="Ex: 5511999999999"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
