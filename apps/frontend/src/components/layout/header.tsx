@@ -14,7 +14,11 @@ interface Notification {
   createdAt: string;
 }
 
-export function Header() {
+interface HeaderProps {
+  title?: string;
+}
+
+export function Header({ title }: HeaderProps) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
 
@@ -35,7 +39,7 @@ export function Header() {
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
       <div className="flex items-center gap-2">
         <span className="text-2xl">🏡</span>
-        <span className="font-semibold text-gray-800">Família Maestre</span>
+        <span className="font-semibold text-gray-800">{title ?? 'Família Maestre'}</span>
       </div>
 
       <div className="flex items-center gap-3">
