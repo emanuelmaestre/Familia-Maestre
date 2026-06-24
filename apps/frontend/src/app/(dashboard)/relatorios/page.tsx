@@ -185,7 +185,7 @@ export default function RelatoriosPage() {
                               <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                          <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
