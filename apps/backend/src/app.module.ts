@@ -5,15 +5,14 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ShoppingModule } from './modules/shopping/shopping.module';
-import { InventoryModule } from './modules/inventory/inventory.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { EventsModule } from './modules/events/events.module';
-import { TasksModule } from './modules/tasks/tasks.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 import { AiModule } from './modules/ai/ai.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
-import { WebsocketModule } from './modules/websocket/websocket.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
 
 @Module({
   imports: [
@@ -23,15 +22,14 @@ import { WebsocketModule } from './modules/websocket/websocket.module';
     AuthModule,
     UsersModule,
     ShoppingModule,
-    InventoryModule,
     FinanceModule,
     EventsModule,
-    TasksModule,
     ReportsModule,
     WhatsAppModule,
     AiModule,
     NotificationsModule,
-    WebsocketModule,
+    IntegrationsModule,
+    PurchasesModule,
   ],
 })
 export class AppModule {}

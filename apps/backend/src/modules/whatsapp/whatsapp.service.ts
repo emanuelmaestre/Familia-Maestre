@@ -65,7 +65,7 @@ export class WhatsAppService implements OnModuleInit {
 
     if (!user) {
       await this.sendText(phone,
-        '❌ Você não está cadastrado no sistema. Peça ao administrador para te adicionar.',
+        'Você não está cadastrado no sistema. Peça ao administrador para te adicionar.',
       );
       return;
     }
@@ -73,24 +73,24 @@ export class WhatsAppService implements OnModuleInit {
     if (message.toLowerCase() === '/lista') {
       const items = await this.shopping.findAll({ status: 'PENDING' });
       if (items.length === 0) {
-        await this.sendText(phone, '✅ A lista de compras está vazia!');
+        await this.sendText(phone, 'A lista de compras está vazia!');
       } else {
         const text = items
           .map((i) => `• ${i.name} (${i.quantity}${i.unit ? ' ' + i.unit : ''}) — ${i.priority}`)
           .join('\n');
-        await this.sendText(phone, `🛒 *Lista de compras:*\n${text}`);
+        await this.sendText(phone, `*Lista de compras:*\n${text}`);
       }
       return;
     }
 
     if (message.toLowerCase() === '/ajuda') {
       await this.sendText(phone,
-        '👋 Olá! Sou o assistente da família.\n\n' +
+        'Olá! Sou o assistente da família.\n\n' +
         'Comandos:\n' +
         '/lista — Ver lista de compras\n' +
         '/ajuda — Ver este menu\n\n' +
         'Você também pode enviar mensagens como:\n' +
-        '"Acabou o arroz" para adicionar à lista 🛒',
+        '"Acabou o arroz" para adicionar à lista.',
       );
       return;
     }
@@ -99,7 +99,7 @@ export class WhatsAppService implements OnModuleInit {
       const result = await this.shopping.createFromMessage(message, user);
 
       if ('alreadyExists' in result && result.alreadyExists) {
-        await this.sendText(phone, `ℹ️ ${result.message}`);
+        await this.sendText(phone, result.message);
       } else if ('name' in result) {
         await this.sendText(phone,
           `✓ *${result.name}* adicionado à lista ` +
@@ -109,7 +109,7 @@ export class WhatsAppService implements OnModuleInit {
       }
     } catch (err) {
       this.logger.error('Erro ao processar mensagem WhatsApp:', err);
-      await this.sendText(phone, '❌ Não consegui processar sua mensagem. Tente novamente.');
+      await this.sendText(phone, 'Não consegui processar sua mensagem. Tente novamente.');
     }
   }
 }

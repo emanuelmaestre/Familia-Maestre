@@ -1,13 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Header } from '@/components/layout/header';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import {
-  ShoppingCart, Package, DollarSign, Calendar, CheckSquare, AlertTriangle,
+  ShoppingCart, DollarSign, Calendar, BarChart3,
 } from 'lucide-react';
-import Link from 'next/link';
 
 interface SummaryData {
   income: number;
@@ -30,11 +29,9 @@ interface Event {
   location?: string;
 }
 
-interface TaskAssignment {
+interface Report {
   id: string;
-  dueDate: string;
-  task: { name: string };
-  user: { name: string };
+  period: string;
 }
 
 export default function DashboardPage() {
@@ -60,9 +57,9 @@ export default function DashboardPage() {
         .then((r) => r.data.slice(0, 5)),
   });
 
-  const { data: myTasks = [] } = useQuery<TaskAssignment[]>({
-    queryKey: ['my-tasks'],
-    queryFn: () => api.get('/tasks/my').then((r) => r.data),
+  const { data: reports = [] } = useQuery<Report[]>({
+    queryKey: ['reports-dashboard'],
+    queryFn: () => api.get('/reports').then((r) => r.data),
   });
 
   const cards = [
@@ -72,7 +69,7 @@ export default function DashboardPage() {
       subtitle: shoppingItems.filter((i) => i.priority === 'URGENT' || i.priority === 'HIGH').length + ' urgentes',
       icon: ShoppingCart,
       color: 'text-blue-600 bg-blue-50',
-      href: '/lista',
+      href: '/compras',
     },
     {
       title: 'Receitas do Mês',
@@ -99,50 +96,60 @@ export default function DashboardPage() {
       href: '/agenda',
     },
     {
-      title: 'Minhas Tarefas',
-      value: `${myTasks.length} pendentes`,
-      subtitle: myTasks[0]?.task.name ?? 'Tudo em dia!',
-      icon: CheckSquare,
+      title: 'Relatórios',
+      value: `${reports.length} recentes`,
+      subtitle: reports[0]?.period ?? 'Nenhum relatório',
+      icon: BarChart3,
       color: 'text-orange-600 bg-orange-50',
-      href: '/tarefas',
+      href: '/relatorios',
     },
   ];
 
   return (
-    <div>
-      <Header title="Dashboard" />
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="app-page space-y-6">
+        <section className="surface-soft p-5 sm:p-6">
+          <p className="text-sm font-medium text-blue-700">
+            Visão de {now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+          </p>
+          <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-950">Controle familiar em um só lugar</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Compras, finanças, eventos e notificações organizados para a rotina da família.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {cards.map((card) => (
-            <Link
-              key={card.title}
-              href={card.href}
-              className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition group"
-            >
-              <div className={`inline-flex p-2 rounded-lg ${card.color} mb-3`}>
-                <card.icon className="w-5 h-5" />
+            <Link key={card.title} href={card.href} className="interactive-card p-5">
+              <div className={`mb-3 inline-flex rounded-xl p-2.5 ${card.color}`}>
+                <card.icon className="h-5 w-5" />
               </div>
               <p className="text-2xl font-bold text-gray-900">{card.value}</p>
-              <p className="text-sm font-medium text-gray-700 mt-1">{card.title}</p>
-              <p className="text-xs text-gray-500 mt-0.5 truncate">{card.subtitle}</p>
+              <p className="mt-1 text-sm font-medium text-gray-700">{card.title}</p>
+              <p className="mt-0.5 truncate text-xs text-gray-500">{card.subtitle}</p>
             </Link>
           ))}
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-4">
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="surface p-5">
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Lista de Compras</h3>
-              <Link href="/lista" className="text-blue-600 text-sm hover:underline">Ver tudo</Link>
+              <Link href="/compras" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                Ver tudo
+              </Link>
             </div>
             {shoppingItems.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-4">Nenhum item pendente</p>
+              <EmptyState text="Nenhum item pendente" />
             ) : (
               <ul className="space-y-2">
                 {shoppingItems.slice(0, 6).map((item) => (
-                  <li key={item.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <li key={item.id} className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-gray-50">
                     <span className="text-sm text-gray-700">{item.name}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    <span className={`status-pill ${
                       item.priority === 'URGENT' ? 'bg-red-100 text-red-700' :
                       item.priority === 'HIGH' ? 'bg-orange-100 text-orange-700' :
                       'bg-gray-100 text-gray-600'
@@ -155,24 +162,26 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-4">
+          <div className="surface p-5">
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Próximos Eventos</h3>
-              <Link href="/agenda" className="text-blue-600 text-sm hover:underline">Ver tudo</Link>
+              <Link href="/agenda" className="text-sm font-medium text-blue-600 hover:text-blue-700">
+                Ver tudo
+              </Link>
             </div>
             {upcomingEvents.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-4">Nenhum evento agendado</p>
+              <EmptyState text="Nenhum evento agendado" />
             ) : (
               <ul className="space-y-3">
                 {upcomingEvents.map((event) => (
-                  <li key={event.id} className="flex gap-3 py-2 border-b border-gray-50 last:border-0">
-                    <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 flex-shrink-0">
-                      <Calendar className="w-5 h-5" />
+                  <li key={event.id} className="flex gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                      <Calendar className="h-5 w-5" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{event.title}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-gray-800">{event.title}</p>
                       <p className="text-xs text-gray-500">
-                        {formatDate(event.startsAt)}{event.location ? ` — ${event.location}` : ''}
+                        {formatDate(event.startsAt)}{event.location ? ` - ${event.location}` : ''}
                       </p>
                     </div>
                   </li>
@@ -180,8 +189,15 @@ export default function DashboardPage() {
               </ul>
             )}
           </div>
-        </div>
-      </div>
+        </section>
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/70 py-8 text-center text-sm text-gray-400">
+      {text}
     </div>
   );
 }

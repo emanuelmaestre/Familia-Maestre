@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
@@ -82,29 +82,5 @@ export class UsersService {
       data: { deletedAt: new Date() },
     });
     return { message: 'Usuário removido' };
-  }
-
-  async getScoreboard() {
-    const completions = await this.prisma.taskCompletion.groupBy({
-      by: ['userId', 'status'],
-      _count: { _all: true },
-      where: {
-        createdAt: {
-          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        },
-      },
-    });
-
-    const users = await this.findAll();
-
-    return users.map((u) => {
-      const done = completions
-        .filter((c) => c.userId === u.id && c.status === 'DONE')
-        [0]?._count?._all ?? 0;
-      const skipped = completions
-        .filter((c) => c.userId === u.id && c.status === 'SKIPPED')
-        [0]?._count?._all ?? 0;
-      return { ...u, tasksCompleted: done, tasksSkipped: skipped };
-    });
   }
 }

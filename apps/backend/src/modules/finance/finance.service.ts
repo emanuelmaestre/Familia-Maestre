@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -7,11 +7,14 @@ import {
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType, Role, TransactionType, User } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { NotificationType, PaymentMethod, Prisma, Role, TransactionType, User } from '@prisma/client';
 
 export interface CreateTransactionDto {
   description: string;
+  supplierName?: string;
+  tradeName?: string;
+  documentNumber?: string;
+  paymentMethod?: PaymentMethod;
   amount: number;
   type: TransactionType;
   categoryId?: string;
@@ -24,6 +27,10 @@ export interface CreateTransactionDto {
 
 export interface UpdateTransactionDto {
   description?: string;
+  supplierName?: string;
+  tradeName?: string;
+  documentNumber?: string;
+  paymentMethod?: PaymentMethod;
   categoryId?: string;
   notes?: string;
   dueDate?: string;
@@ -64,7 +71,11 @@ export class FinanceService {
     return this.prisma.transaction.create({
       data: {
         description: dto.description,
-        amount: new Decimal(dto.amount),
+        supplierName: dto.supplierName,
+        tradeName: dto.tradeName,
+        documentNumber: dto.documentNumber,
+        paymentMethod: dto.paymentMethod,
+        amount: new Prisma.Decimal(dto.amount),
         type: dto.type,
         categoryId: dto.categoryId,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
@@ -79,7 +90,7 @@ export class FinanceService {
   }
 
   async markPaid(id: string, user: User) {
-    const tx = await this.prisma.transaction.findUniqueOrThrow({
+    const tx = await this.prisma.transaction.findFirstOrThrow({
       where: { id, deletedAt: null },
     });
 
@@ -94,7 +105,7 @@ export class FinanceService {
   }
 
   async update(id: string, dto: UpdateTransactionDto, user: User) {
-    const tx = await this.prisma.transaction.findUniqueOrThrow({
+    const tx = await this.prisma.transaction.findFirstOrThrow({
       where: { id, deletedAt: null },
     });
 
@@ -105,7 +116,7 @@ export class FinanceService {
   }
 
   async remove(id: string, user: User) {
-    const tx = await this.prisma.transaction.findUniqueOrThrow({
+    const tx = await this.prisma.transaction.findFirstOrThrow({
       where: { id, deletedAt: null },
     });
 
@@ -227,6 +238,10 @@ export class FinanceService {
         await this.prisma.transaction.create({
           data: {
             description: tx.description,
+            supplierName: tx.supplierName,
+            tradeName: tx.tradeName,
+            documentNumber: tx.documentNumber,
+            paymentMethod: tx.paymentMethod,
             amount: tx.amount,
             type: tx.type,
             categoryId: tx.categoryId,

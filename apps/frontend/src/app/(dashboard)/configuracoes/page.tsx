@@ -1,17 +1,17 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Header } from '@/components/layout/header';
+import { ActionDrawer } from '@/components/ui/action-drawer';
 import { useAuthStore } from '@/store/auth.store';
-import { Plus, Trash2, Users } from 'lucide-react';
+import { ArrowRight, Plug, Plus, Users } from 'lucide-react';
 
 interface User {
   id: string;
   name: string;
-  telegramId: string;
-  telegramHandle?: string;
+  phone: string;
   role: string;
   isActive: boolean;
 }
@@ -20,7 +20,7 @@ export default function ConfiguracoesPage() {
   const { user: me } = useAuthStore();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', telegramId: '', telegramHandle: '', password: '', role: 'MEMBER' });
+  const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'MEMBER' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
   const [pwMsg, setPwMsg] = useState('');
 
@@ -35,7 +35,7 @@ export default function ConfiguracoesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setShowForm(false);
-      setForm({ name: '', telegramId: '', telegramHandle: '', password: '', role: 'MEMBER' });
+      setForm({ name: '', phone: '', password: '', role: 'MEMBER' });
     },
   });
 
@@ -56,107 +56,97 @@ export default function ConfiguracoesPage() {
   });
 
   return (
-    <div>
-      <Header title="Configurações" />
-      <div className="p-6 space-y-6 max-w-3xl">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-4">Alterar Senha</h3>
-          <div className="space-y-3 max-w-sm">
-            <input
-              type="password"
-              placeholder="Senha atual"
-              value={pwForm.currentPassword}
-              onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="password"
-              placeholder="Nova senha"
-              value={pwForm.newPassword}
-              onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="password"
-              placeholder="Confirmar nova senha"
-              value={pwForm.confirm}
-              onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {pwMsg && <p className={`text-sm ${pwMsg.includes('sucesso') ? 'text-green-600' : 'text-red-600'}`}>{pwMsg}</p>}
-            <button
-              onClick={() => {
-                if (pwForm.newPassword !== pwForm.confirm) { setPwMsg('As senhas não conferem.'); return; }
-                changePassword.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
-              }}
-              disabled={!pwForm.currentPassword || !pwForm.newPassword || changePassword.isPending}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
-              Alterar Senha
-            </button>
-          </div>
+    <div className="app-page max-w-3xl space-y-6">
+      <div className="surface p-5">
+        <h3 className="mb-4 font-semibold text-gray-900">Alterar Senha</h3>
+        <div className="max-w-sm space-y-3">
+          <input type="password" placeholder="Senha atual" value={pwForm.currentPassword} onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })} className="input-control" />
+          <input type="password" placeholder="Nova senha" value={pwForm.newPassword} onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })} className="input-control" />
+          <input type="password" placeholder="Confirmar nova senha" value={pwForm.confirm} onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })} className="input-control" />
+          {pwMsg && <p className={`text-sm ${pwMsg.includes('sucesso') ? 'text-green-600' : 'text-red-600'}`}>{pwMsg}</p>}
+          <button
+            type="button"
+            onClick={() => {
+              if (pwForm.newPassword !== pwForm.confirm) {
+                setPwMsg('As senhas não conferem.');
+                return;
+              }
+              changePassword.mutate({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+            }}
+            disabled={!pwForm.currentPassword || !pwForm.newPassword || changePassword.isPending}
+            className="btn-primary"
+          >
+            Alterar Senha
+          </button>
         </div>
+      </div>
 
-        {me?.role === 'ADMIN' && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Users className="w-4 h-4" /> Membros da Família
+      {me?.role === 'ADMIN' && (
+        <>
+          <Link href="/integracoes" className="interactive-card flex items-center justify-between gap-4 p-5">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="rounded-xl bg-blue-50 p-3 text-blue-700">
+                <Plug className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-950">Integrações</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Configure e acompanhe WhatsApp, Correios, IA, notificações e rotinas automáticas.
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 flex-shrink-0 text-gray-400" />
+          </Link>
+
+          <div className="surface p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="flex items-center gap-2 font-semibold text-gray-900">
+                <Users className="h-4 w-4" /> Membros da Família
               </h3>
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-              >
-                <Plus className="w-3 h-3" /> Adicionar
+              <button type="button" onClick={() => setShowForm(true)} className="btn-primary px-3 py-1.5">
+                <Plus className="h-3 w-3" /> Adicionar
               </button>
             </div>
 
-            {showForm && (
-              <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <input placeholder="Nome *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input placeholder="Telegram ID *" value={form.telegramId} onChange={(e) => setForm({ ...form, telegramId: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input placeholder="@handle (opcional)" value={form.telegramHandle} onChange={(e) => setForm({ ...form, telegramHandle: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <input type="password" placeholder="Senha *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                  <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="MEMBER">Membro</option>
-                    <option value="ADMIN">Administrador</option>
-                  </select>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => createUser.mutate(form)}
-                    disabled={!form.name || !form.telegramId || !form.password || createUser.isPending}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {createUser.isPending ? 'Salvando...' : 'Salvar'}
-                  </button>
-                  <button onClick={() => setShowForm(false)} className="px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-100 border border-gray-200">Cancelar</button>
-                </div>
+            <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Adicionar Membro">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input placeholder="Nome *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-control" />
+                <input placeholder="Telefone / WhatsApp *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-control" />
+                <input type="password" placeholder="Senha *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-control" />
+                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="input-control">
+                  <option value="MEMBER">Membro</option>
+                  <option value="ADMIN">Administrador</option>
+                </select>
               </div>
-            )}
+              <div className="mt-5 flex gap-2">
+                <button type="button" onClick={() => createUser.mutate(form)} disabled={!form.name || !form.phone || !form.password || createUser.isPending} className="btn-primary">
+                  {createUser.isPending ? 'Salvando...' : 'Salvar'}
+                </button>
+                <button type="button" onClick={() => setShowForm(false)} className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
+                  Cancelar
+                </button>
+              </div>
+            </ActionDrawer>
 
             <div className="space-y-2">
               {users.map((u) => (
-                <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700">
+                <div key={u.id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 p-3 transition-colors hover:bg-gray-100">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
                       {u.name[0].toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{u.name}</p>
-                      <p className="text-xs text-gray-500">ID: {u.telegramId} · {u.role === 'ADMIN' ? 'Administrador' : 'Membro'}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-gray-900">{u.name}</p>
+                      <p className="truncate text-xs text-gray-500">
+                        WhatsApp: {u.phone} - {u.role === 'ADMIN' ? 'Administrador' : 'Membro'}
+                      </p>
                     </div>
                   </div>
                   {u.id !== me?.id && (
                     <button
+                      type="button"
                       onClick={() => toggleActive.mutate({ id: u.id, isActive: !u.isActive })}
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${u.isActive ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'}`}
+                      className={`status-pill transition-colors ${u.isActive ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'}`}
                     >
                       {u.isActive ? 'Ativo' : 'Inativo'}
                     </button>
@@ -165,8 +155,8 @@ export default function ConfiguracoesPage() {
               ))}
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

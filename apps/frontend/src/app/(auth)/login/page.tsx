@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
@@ -18,20 +20,33 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(phone, password);
+      await login(phone.trim(), password);
       router.push('/dashboard');
-    } catch {
-      setError('Telefone ou senha inválidos');
+    } catch (err: any) {
+      const status = err?.response?.status;
+
+      if (!err?.response) {
+        setError('Não foi possível conectar à API. No deploy, confira a variável NEXT_PUBLIC_API_URL na Vercel.');
+      } else if (status === 401) {
+        setError('Telefone ou senha inválidos.');
+      } else {
+        setError('Erro ao autenticar. Verifique a configuração da API.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+    <div className="app-page min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="surface w-full max-w-md p-7 sm:p-8">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🏡</div>
+          <div
+            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-4xl shadow-inner shadow-blue-100"
+            style={{ animation: 'float-home 4s ease-in-out infinite' }}
+          >
+            🏠
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">Família Maestre</h1>
           <p className="text-gray-500 mt-1">Sistema de Administração Familiar</p>
         </div>
@@ -44,10 +59,10 @@ export default function LoginPage() {
             <input
               type="text"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value.trimStart())}
               required
-              placeholder="Ex: 5511999999999"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: 01"
+              className="input-control"
             />
           </div>
 
@@ -55,18 +70,29 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Senha
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="Digite sua senha"
+                className="input-control pr-12"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
               {error}
             </div>
           )}
@@ -74,7 +100,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="btn-primary w-full justify-center"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>

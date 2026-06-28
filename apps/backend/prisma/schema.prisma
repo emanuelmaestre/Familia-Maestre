@@ -34,15 +34,16 @@ enum ShoppingItemStatus {
   CANCELLED
 }
 
-enum EntryType {
-  IN
-  OUT
-  ADJUSTMENT
-}
-
 enum TransactionType {
   EXPENSE
   INCOME
+}
+
+enum PaymentMethod {
+  PIX
+  CASH
+  DEBIT_CARD
+  CREDIT_CARD
 }
 
 enum EventType {
@@ -61,33 +62,10 @@ enum EventStatus {
   RESCHEDULED
 }
 
-enum TaskFrequency {
-  DAILY
-  WEEKLY
-  BIWEEKLY
-  MONTHLY
-  OCCASIONAL
-}
-
-enum TaskStatus {
-  PENDING
-  DONE
-  SKIPPED
-}
-
-enum AssignmentMethod {
-  MANUAL
-  ROTATION
-}
-
 enum NotificationType {
   SHOPPING_ITEM_ADDED
-  STOCK_LOW
-  STOCK_EXPIRING
   PAYMENT_DUE
   EVENT_REMINDER
-  TASK_DUE
-  TASK_OVERDUE
   REPORT_READY
   CONFIRMATION_REQUEST
   GENERAL
@@ -104,6 +82,14 @@ enum ReportStatus {
   READY
   SENT
   FAILED
+}
+
+enum FiscalReceiptStatus {
+  SCANNED
+  PROCESSING
+  REVIEWED
+  IMPORTED
+  ERROR
 }
 
 enum AiProvider {
@@ -129,10 +115,7 @@ model User {
   shoppingRequests  ShoppingItem[]   @relation("RequestedBy")
   shoppingPurchases ShoppingItem[]   @relation("PurchasedBy")
   transactions      Transaction[]
-  taskAssignments   TaskAssignment[]
-  taskCompletions   TaskCompletion[]
   eventAttendees    EventAttendee[]
-  inventoryEntries  InventoryEntry[]
   notifications     Notification[]
   aiLogs            AiLog[]
 
@@ -180,8 +163,6 @@ model ShoppingItem {
   requestedBy     User           @relation("RequestedBy", fields: [requestedById], references: [id])
   purchasedById   String?
   purchasedBy     User?          @relation("PurchasedBy", fields: [purchasedById], references: [id])
-  inventoryItemId String?
-  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id])
   transaction     Transaction?
 
   @@index([listId, status])
@@ -190,60 +171,73 @@ model ShoppingItem {
 }
 
 // ============================================================
-// ESTOQUE
+// COMPRAS / CUPONS FISCAIS
 // ============================================================
 
-model InventoryCategory {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  icon      String?
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
+model Product {
+  id               String    @id @default(cuid())
+  name             String    @unique
+  lastUnitPrice    Decimal?  @db.Decimal(10, 2)
+  unit             String?
+  taxes            Decimal?  @db.Decimal(10, 2)
+  lastPurchasedAt  DateTime?
+  lastSupplierName String?
+  lastReceiptId    String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  items InventoryItem[]
+  historyItems PurchaseHistoryItem[]
 
-  @@map("inventory_categories")
+  @@map("products")
 }
 
-model InventoryItem {
-  id          String    @id @default(cuid())
-  name        String
-  quantity    Float     @default(0)
-  unit        String
-  minQuantity Float     @default(1)
-  location    String?
-  imageUrl    String?
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+model FiscalReceipt {
+  id             String              @id @default(cuid())
+  qrCodeRaw      String?
+  url            String?
+  accessKey      String?             @unique
+  supplierName   String?
+  tradeName      String?
+  documentNumber String?
+  purchaseDate   DateTime
+  totalAmount    Decimal             @db.Decimal(10, 2)
+  paymentMethod  PaymentMethod?
+  cardLast4      String?
+  status         FiscalReceiptStatus @default(SCANNED)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
-  categoryId    String
-  category      InventoryCategory @relation(fields: [categoryId], references: [id])
-  entries       InventoryEntry[]
-  shoppingItems ShoppingItem[]
+  items       PurchaseHistoryItem[]
+  transaction Transaction?
 
-  @@index([categoryId])
-  @@map("inventory_items")
+  @@index([purchaseDate])
+  @@index([documentNumber])
+  @@map("fiscal_receipts")
 }
 
-model InventoryEntry {
-  id          String    @id @default(cuid())
-  type        EntryType
-  quantity    Float
-  notes       String?
-  expiresAt   DateTime?
-  imageUrl    String?
-  aiExtracted Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+model PurchaseHistoryItem {
+  id            String         @id @default(cuid())
+  productName   String
+  unitPrice     Decimal        @db.Decimal(10, 2)
+  unit          String?
+  taxes         Decimal?       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod?
+  accessKey     String?
+  discount      Decimal?       @db.Decimal(10, 2)
+  quantity      Float          @default(1)
+  purchaseDate  DateTime
+  cardLast4     String?
+  totalAmount   Decimal        @db.Decimal(10, 2)
+  createdAt     DateTime       @default(now())
 
-  itemId String
-  item   InventoryItem @relation(fields: [itemId], references: [id])
-  userId String
-  user   User          @relation(fields: [userId], references: [id])
+  productId String?
+  product   Product?      @relation(fields: [productId], references: [id])
+  receiptId String
+  receipt   FiscalReceipt @relation(fields: [receiptId], references: [id])
 
-  @@index([itemId])
-  @@index([expiresAt])
-  @@map("inventory_entries")
+  @@index([productName, purchaseDate])
+  @@index([receiptId])
+  @@map("purchase_history_items")
 }
 
 // ============================================================
@@ -266,6 +260,10 @@ model TransactionCategory {
 model Transaction {
   id           String          @id @default(cuid())
   description  String
+  supplierName String?
+  tradeName String?
+  documentNumber String?
+  paymentMethod PaymentMethod?
   amount       Decimal         @db.Decimal(10, 2)
   type         TransactionType
   dueDate      DateTime?
@@ -286,6 +284,8 @@ model Transaction {
   user           User                 @relation(fields: [userId], references: [id])
   shoppingItemId String?              @unique
   shoppingItem   ShoppingItem?        @relation(fields: [shoppingItemId], references: [id])
+  fiscalReceiptId String?             @unique
+  fiscalReceipt   FiscalReceipt?      @relation(fields: [fiscalReceiptId], references: [id])
 
   @@index([userId, type])
   @@index([dueDate, isPaid])
@@ -333,62 +333,6 @@ model EventAttendee {
 
   @@unique([eventId, userId])
   @@map("event_attendees")
-}
-
-// ============================================================
-// RESPONSABILIDADES / TAREFAS
-// ============================================================
-
-model Task {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  frequency   TaskFrequency
-  effortScore Int           @default(1)
-  isActive    Boolean       @default(true)
-  deletedAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  assignments TaskAssignment[]
-
-  @@map("tasks")
-}
-
-model TaskAssignment {
-  id             String           @id @default(cuid())
-  dueDate        DateTime
-  method         AssignmentMethod @default(MANUAL)
-  notifiedAt     DateTime?
-  reminderSentAt DateTime?
-  deletedAt      DateTime?
-  createdAt      DateTime         @default(now())
-
-  taskId     String
-  task       Task            @relation(fields: [taskId], references: [id])
-  userId     String
-  user       User            @relation(fields: [userId], references: [id])
-  completion TaskCompletion?
-
-  @@index([userId, dueDate])
-  @@index([taskId])
-  @@map("task_assignments")
-}
-
-model TaskCompletion {
-  id          String     @id @default(cuid())
-  status      TaskStatus
-  completedAt DateTime?
-  notes       String?
-  createdAt   DateTime   @default(now())
-
-  assignmentId String         @unique
-  assignment   TaskAssignment @relation(fields: [assignmentId], references: [id])
-  userId       String
-  user         User           @relation(fields: [userId], references: [id])
-
-  @@index([userId])
-  @@map("task_completions")
 }
 
 // ============================================================

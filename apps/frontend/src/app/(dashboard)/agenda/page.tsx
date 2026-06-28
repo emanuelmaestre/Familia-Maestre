@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Header } from '@/components/layout/header';
+import { ActionDrawer } from '@/components/ui/action-drawer';
 import { formatDateTime, EVENT_TYPE_LABELS, STATUS_LABELS } from '@/lib/utils';
-import { Plus, MapPin, Users, X } from 'lucide-react';
+import { Plus, MapPin, Users, X, Calendar } from 'lucide-react';
 
 interface EventAttendee {
   id: string;
   confirmed: boolean;
-  user: { id: string; name: string; avatarUrl?: string };
+  user: { id: string; name: string; phone?: string; avatarUrl?: string };
 }
 
 interface Event {
@@ -28,6 +28,7 @@ interface Event {
 interface User {
   id: string;
   name: string;
+  phone: string;
 }
 
 const EVENT_TYPES = ['MEDICAL', 'SCHOOL', 'ROUTINE', 'APPOINTMENT', 'OTHER'];
@@ -80,165 +81,115 @@ export default function AgendaPage() {
   };
 
   return (
-    <div>
-      <Header title="Agenda" />
-      <div className="p-6 space-y-4">
-        <div className="flex justify-end">
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Evento
+    <div className="app-page space-y-4">
+      <div className="flex justify-end">
+        <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
+          <Plus className="h-4 w-4" />
+          Novo Evento
+        </button>
+      </div>
+
+      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Evento">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <input placeholder="Título *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input-control sm:col-span-2" />
+          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input-control">
+            {EVENT_TYPES.map((t) => <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>)}
+          </select>
+          <input placeholder="Local" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="input-control" />
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">Início *</label>
+            <input type="datetime-local" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} className="input-control" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">Fim</label>
+            <input type="datetime-local" value={form.endsAt} onChange={(e) => setForm({ ...form, endsAt: e.target.value })} className="input-control" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs text-gray-500">Participantes</label>
+            <div className="flex flex-wrap gap-2">
+              {users.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => toggleAttendee(u.id)}
+                  title={`WhatsApp: ${u.phone}`}
+                  className={`rounded-xl px-3 py-2 text-left text-xs font-medium transition-all ${
+                    form.attendeeIds.includes(u.id)
+                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="block">{u.name}</span>
+                  <span className={`block text-[10px] ${form.attendeeIds.includes(u.id) ? 'text-blue-100' : 'text-gray-500'}`}>
+                    {u.phone}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea placeholder="Descrição" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="input-control sm:col-span-2" />
+        </div>
+        <div className="mt-5 flex gap-2">
+          <button type="button" onClick={() => createEvent.mutate(form)} disabled={!form.title || !form.startsAt || createEvent.isPending} className="btn-primary">
+            {createEvent.isPending ? 'Salvando...' : 'Salvar'}
+          </button>
+          <button type="button" onClick={() => setShowForm(false)} className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200">
+            Cancelar
           </button>
         </div>
+      </ActionDrawer>
 
-        {showForm && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-4">Novo Evento</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                placeholder="Título *"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 col-span-2"
-              />
-              <select
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {EVENT_TYPES.map((t) => <option key={t} value={t}>{EVENT_TYPE_LABELS[t]}</option>)}
-              </select>
-              <input
-                placeholder="Local"
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Início *</label>
-                <input
-                  type="datetime-local"
-                  value={form.startsAt}
-                  onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Fim</label>
-                <input
-                  type="datetime-local"
-                  value={form.endsAt}
-                  onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs text-gray-500 mb-1">Participantes</label>
-                <div className="flex flex-wrap gap-2">
-                  {users.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => toggleAttendee(u.id)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                        form.attendeeIds.includes(u.id)
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {u.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <textarea
-                placeholder="Descrição"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={2}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 col-span-2"
-              />
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => createEvent.mutate(form)}
-                disabled={!form.title || !form.startsAt || createEvent.isPending}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {createEvent.isPending ? 'Salvando...' : 'Salvar'}
-              </button>
-              <button
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
-              >
-                Cancelar
-              </button>
-            </div>
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600" />
+        </div>
+      ) : events.length === 0 ? (
+        <div className="surface-soft py-12 text-center text-gray-400">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-500 shadow-sm">
+            <Calendar className="h-8 w-8" />
           </div>
-        )}
-
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-          </div>
-        ) : events.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-12">Nenhum evento agendado</p>
-        ) : (
-          <div className="space-y-3">
-            {events.map((event) => (
-              <div key={event.id} className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                        {EVENT_TYPE_LABELS[event.type]}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[event.status]}`}>
-                        {STATUS_LABELS[event.status]}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500">{formatDateTime(event.startsAt)}</p>
-                    {event.location && (
-                      <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                        <MapPin className="w-3 h-3" /> {event.location}
-                      </p>
-                    )}
-                    {event.attendees.length > 0 && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Users className="w-3 h-3 text-gray-400" />
-                        <div className="flex gap-1 flex-wrap">
-                          {event.attendees.map((a) => (
-                            <span
-                              key={a.id}
-                              className={`text-xs px-2 py-0.5 rounded-full ${
-                                a.confirmed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                              }`}
-                            >
-                              {a.user.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+          <p className="mt-3 text-sm">Nenhum evento agendado</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {events.map((event) => (
+            <div key={event.id} className="interactive-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold text-gray-900">{event.title}</h3>
+                    <span className="status-pill bg-purple-100 text-purple-700">{EVENT_TYPE_LABELS[event.type]}</span>
+                    <span className={`status-pill ${STATUS_COLORS[event.status]}`}>{STATUS_LABELS[event.status]}</span>
                   </div>
-                  {event.status === 'SCHEDULED' && (
-                    <button
-                      onClick={() => cancelEvent.mutate(event.id)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg flex-shrink-0"
-                      title="Cancelar evento"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                  <p className="text-sm text-gray-500">{formatDateTime(event.startsAt)}</p>
+                  {event.location && (
+                    <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                      <MapPin className="h-3 w-3" /> {event.location}
+                    </p>
+                  )}
+                  {event.attendees.length > 0 && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <Users className="h-3 w-3 text-gray-400" />
+                      <div className="flex flex-wrap gap-1">
+                        {event.attendees.map((a) => (
+                          <span key={a.id} className={`status-pill ${a.confirmed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                            {a.user.name}{a.user.phone ? ` - ${a.user.phone}` : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
+                {event.status === 'SCHEDULED' && (
+                  <button type="button" onClick={() => cancelEvent.mutate(event.id)} className="flex-shrink-0 rounded-lg p-1.5 text-red-500 transition hover:bg-red-50" title="Cancelar evento">
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   ConflictException,
@@ -6,8 +6,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { AppGateway } from '../websocket/websocket.gateway';
 import { Priority, ShoppingItemStatus, Role, User } from '@prisma/client';
 
 export interface CreateShoppingItemDto {
@@ -33,7 +31,6 @@ export interface UpdateShoppingItemDto {
 export interface PurchaseItemDto {
   purchasedPrice?: number;
   createTransaction?: boolean;
-  updateInventory?: boolean;
 }
 
 @Injectable()
@@ -41,8 +38,6 @@ export class ShoppingService {
   constructor(
     private prisma: PrismaService,
     private ai: AiService,
-    private notifications: NotificationsService,
-    private gateway: AppGateway,
   ) {}
 
   private async getActiveList() {
@@ -111,8 +106,6 @@ export class ShoppingService {
       },
     });
 
-    this.gateway.emit('shopping:item-added', item);
-
     return item;
   }
 
@@ -137,7 +130,7 @@ export class ShoppingService {
   }
 
   async markPurchased(id: string, dto: PurchaseItemDto, user: User) {
-    const item = await this.prisma.shoppingItem.findUniqueOrThrow({
+    await this.prisma.shoppingItem.findFirstOrThrow({
       where: { id, deletedAt: null },
     });
 
@@ -151,40 +144,48 @@ export class ShoppingService {
       },
     });
 
-    this.gateway.emit('shopping:item-purchased', updated);
     return updated;
   }
 
   async cancel(id: string, user: User) {
     if (user.role !== Role.ADMIN) throw new ForbiddenException('Apenas ADMIN pode cancelar itens');
 
-    const updated = await this.prisma.shoppingItem.update({
+    const existing = await this.prisma.shoppingItem.findFirstOrThrow({
       where: { id, deletedAt: null },
+    });
+
+    const updated = await this.prisma.shoppingItem.update({
+      where: { id: existing.id },
       data: { status: ShoppingItemStatus.CANCELLED },
     });
 
-    this.gateway.emit('shopping:item-cancelled', updated);
     return updated;
   }
 
   async remove(id: string, user: User) {
     if (user.role !== Role.ADMIN) throw new ForbiddenException('Apenas ADMIN pode excluir itens');
 
-    await this.prisma.shoppingItem.update({
+    const existing = await this.prisma.shoppingItem.findFirstOrThrow({
       where: { id, deletedAt: null },
+    });
+
+    await this.prisma.shoppingItem.update({
+      where: { id: existing.id },
       data: { deletedAt: new Date() },
     });
 
-    this.gateway.emit('shopping:item-deleted', { id });
     return { message: 'Item removido' };
   }
 
   async update(id: string, dto: UpdateShoppingItemDto) {
-    const item = await this.prisma.shoppingItem.update({
+    const existing = await this.prisma.shoppingItem.findFirstOrThrow({
       where: { id, deletedAt: null },
+    });
+
+    const item = await this.prisma.shoppingItem.update({
+      where: { id: existing.id },
       data: dto,
     });
-    this.gateway.emit('shopping:item-updated', item);
     return item;
   }
 }

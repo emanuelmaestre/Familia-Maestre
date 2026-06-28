@@ -27,7 +27,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true,
 
       login: async (phone, password) => {
-        const { data } = await api.post('/auth/login', { phone, password });
+        const { data } = await api.post('/auth/login', { phone: phone.trim(), password });
         localStorage.setItem('access_token', data.accessToken);
         localStorage.setItem('refresh_token', data.refreshToken);
         set({ user: data.user, isAuthenticated: true, isLoading: false });

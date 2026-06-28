@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Header } from '@/components/layout/header';
+import { ActionDrawer } from '@/components/ui/action-drawer';
 import { useAuthStore } from '@/store/auth.store';
-import { useSocket } from '@/hooks/use-socket';
 import { PRIORITY_LABELS, PRIORITY_COLORS, STATUS_LABELS } from '@/lib/utils';
-import { Plus, Check, X, Trash2 } from 'lucide-react';
+import { Plus, Check, X, Trash2, ShoppingCart } from 'lucide-react';
 
 interface ShoppingItem {
   id: string;
@@ -22,6 +21,19 @@ interface ShoppingItem {
 }
 
 const PRIORITIES = ['URGENT', 'HIGH', 'MEDIUM', 'LOW'];
+const UNIT_OPTIONS = [
+  '', 'un', 'unidade', 'peça', 'par', 'kit', 'jogo', 'dúzia',
+  'pacote', 'caixa', 'fardo', 'saco', 'sacola', 'embalagem', 'refil',
+  'kg', 'g', 'mg', 'tonelada', 'arroba',
+  'L', 'ml', 'm³', 'galão',
+  'm', 'cm', 'mm', 'm²', 'cm²',
+  'lata', 'garrafa', 'pote', 'frasco', 'vidro', 'bisnaga', 'tubo',
+  'sachê', 'envelope', 'cartela', 'blister',
+  'barra', 'tablete', 'rolo', 'bobina', 'folha',
+  'maço', 'molho', 'ramo', 'cabeça', 'pé', 'bandeja',
+  'comprimido', 'cápsula', 'ampola', 'dose',
+  'porção', 'fatias', 'xícara', 'colher', 'pitada',
+];
 
 export default function ListaPage() {
   const { user } = useAuthStore();
@@ -30,12 +42,6 @@ export default function ListaPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     name: '', quantity: 1, unit: '', category: '', priority: 'MEDIUM', notes: '',
-  });
-
-  useSocket((event) => {
-    if (event.startsWith('shopping:')) {
-      queryClient.invalidateQueries({ queryKey: ['shopping'] });
-    }
   });
 
   const { data: items = [], isLoading } = useQuery<ShoppingItem[]>({
@@ -68,196 +74,128 @@ export default function ListaPage() {
   });
 
   return (
-    <div>
-      <Header title="Lista de Compras" />
-      <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex gap-2">
-            {['', 'PENDING', 'PURCHASED', 'CANCELLED'].map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  statusFilter === s
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {s === '' ? 'Todos' : STATUS_LABELS[s] ?? s}
-              </button>
+    <div className="app-page space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {['', 'PENDING', 'PURCHASED', 'CANCELLED'].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatusFilter(s)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+                statusFilter === s
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+                  : 'border border-gray-200 bg-white/80 text-gray-600 hover:bg-white'
+              }`}
+            >
+              {s === '' ? 'Todos' : STATUS_LABELS[s] ?? s}
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
+          <Plus className="h-4 w-4" />
+          Adicionar Item
+        </button>
+      </div>
+
+      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Item">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <input placeholder="Nome do produto *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-control sm:col-span-2" />
+          <input type="number" placeholder="Quantidade" value={form.quantity} min={0.01} step="any" onChange={(e) => setForm({ ...form, quantity: +e.target.value })} className="input-control" />
+          <select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="input-control">
+            {UNIT_OPTIONS.map((unit) => (
+              <option key={unit || 'empty'} value={unit}>
+                {unit || 'Sem unidade'}
+              </option>
             ))}
-          </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar Item
+          </select>
+          <input placeholder="Categoria" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input-control" />
+          <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="input-control">
+            {PRIORITIES.map((p) => (
+              <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+            ))}
+          </select>
+          <input placeholder="Observação" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input-control sm:col-span-2" />
+        </div>
+        <div className="mt-5 flex gap-2">
+          <button type="button" onClick={() => addItem.mutate(form)} disabled={!form.name || addItem.isPending} className="btn-primary">
+            {addItem.isPending ? 'Salvando...' : 'Salvar'}
+          </button>
+          <button type="button" onClick={() => setShowForm(false)} className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-200">
+            Cancelar
           </button>
         </div>
+      </ActionDrawer>
 
-        {showForm && (
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-4">Novo Item</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                placeholder="Nome do produto *"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 col-span-2"
-              />
-              <input
-                type="number"
-                placeholder="Quantidade"
-                value={form.quantity}
-                min={1}
-                onChange={(e) => setForm({ ...form, quantity: +e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                placeholder="Unidade (kg, un, L...)"
-                value={form.unit}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                placeholder="Categoria"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <select
-                value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
-                ))}
-              </select>
-              <input
-                placeholder="Observação"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 col-span-2"
-              />
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => addItem.mutate(form)}
-                disabled={!form.name || addItem.isPending}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {addItem.isPending ? 'Salvando...' : 'Salvar'}
-              </button>
-              <button
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
-              >
-                Cancelar
-              </button>
-            </div>
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600" />
+        </div>
+      ) : items.length === 0 ? (
+        <div className="surface-soft py-12 text-center text-gray-400">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-500 shadow-sm">
+            <ShoppingCart className="h-8 w-8" />
           </div>
-        )}
-
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-          </div>
-        ) : items.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <ShoppingCartEmpty />
-            <p className="mt-3 text-sm">Nenhum item encontrado</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Produto</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Quantidade</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Categoria</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Prioridade</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Solicitante</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {item.quantity}{item.unit ? ` ${item.unit}` : ''}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">{item.category ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_COLORS[item.priority]}`}>
-                        {PRIORITY_LABELS[item.priority]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">{item.requestedBy.name}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.status === 'PURCHASED' ? 'bg-green-100 text-green-700' :
-                        item.status === 'CANCELLED' ? 'bg-gray-100 text-gray-500' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {STATUS_LABELS[item.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1 justify-end">
-                        {item.status === 'PENDING' && (
-                          <>
-                            <button
-                              onClick={() => purchaseItem.mutate(item.id)}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
-                              title="Marcar como comprado"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            {user?.role === 'ADMIN' && (
-                              <button
-                                onClick={() => cancelItem.mutate(item.id)}
-                                className="p-1.5 text-orange-500 hover:bg-orange-50 rounded-lg"
-                                title="Cancelar"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            )}
-                          </>
-                        )}
-                        {user?.role === 'ADMIN' && (
-                          <button
-                            onClick={() => deleteItem.mutate(item.id)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
-                            title="Excluir"
-                          >
-                            <Trash2 className="w-4 h-4" />
+          <p className="mt-3 text-sm">Nenhum item encontrado</p>
+        </div>
+      ) : (
+        <div className="surface overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead className="border-b border-gray-200 bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Produto</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Quantidade</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Categoria</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Prioridade</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Solicitante</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {items.map((item) => (
+                <tr key={item.id} className="transition-colors hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{item.quantity}{item.unit ? ` ${item.unit}` : ''}</td>
+                  <td className="px-4 py-3 text-gray-500">{item.category ?? '-'}</td>
+                  <td className="px-4 py-3"><span className={`status-pill ${PRIORITY_COLORS[item.priority]}`}>{PRIORITY_LABELS[item.priority]}</span></td>
+                  <td className="px-4 py-3 text-gray-500">{item.requestedBy.name}</td>
+                  <td className="px-4 py-3">
+                    <span className={`status-pill ${
+                      item.status === 'PURCHASED' ? 'bg-green-100 text-green-700' :
+                      item.status === 'CANCELLED' ? 'bg-gray-100 text-gray-500' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>
+                      {STATUS_LABELS[item.status]}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1">
+                      {item.status === 'PENDING' && (
+                        <>
+                          <button type="button" onClick={() => purchaseItem.mutate(item.id)} className="rounded-lg p-1.5 text-green-600 transition hover:bg-green-50" title="Marcar como comprado">
+                            <Check className="h-4 w-4" />
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ShoppingCartEmpty() {
-  return (
-    <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-        />
-      </svg>
+                          {user?.role === 'ADMIN' && (
+                            <button type="button" onClick={() => cancelItem.mutate(item.id)} className="rounded-lg p-1.5 text-orange-500 transition hover:bg-orange-50" title="Cancelar">
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {user?.role === 'ADMIN' && (
+                        <button type="button" onClick={() => deleteItem.mutate(item.id)} className="rounded-lg p-1.5 text-red-500 transition hover:bg-red-50" title="Excluir">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

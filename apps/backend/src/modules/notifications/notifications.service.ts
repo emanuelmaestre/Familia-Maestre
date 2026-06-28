@@ -13,7 +13,6 @@ interface SendNotificationDto {
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
   private readonly zapiBase: string;
-  private readonly zapiToken: string;
   private readonly zapiClientToken: string;
 
   constructor(
@@ -73,8 +72,12 @@ export class NotificationsService {
   }
 
   async markRead(notificationId: string, userId: string) {
-    return this.prisma.notification.update({
+    const notification = await this.prisma.notification.findFirstOrThrow({
       where: { id: notificationId, userId },
+    });
+
+    return this.prisma.notification.update({
+      where: { id: notification.id },
       data: { readAt: new Date() },
     });
   }

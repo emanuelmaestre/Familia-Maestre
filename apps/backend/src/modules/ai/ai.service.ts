@@ -1,9 +1,8 @@
-import { Injectable, Logger, RequestTimeoutException } from '@nestjs/common';
+﻿import { Injectable, Logger, RequestTimeoutException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
-import { AiProvider, Priority } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+import { AiProvider, Prisma, Priority } from '@prisma/client';
 
 interface ShoppingExtraction {
   name: string;
@@ -20,17 +19,10 @@ interface ReceiptExtraction {
   storeName?: string;
 }
 
-interface InventoryExtraction {
-  name: string;
-  quantity: number;
-  unit: string;
-  expiresAt?: string;
-  category?: string;
-}
-
 @Injectable()
 export class AiService {
-  private openai: OpenAI;
+  private openai?: OpenAI;
+  private apiKey?: string;
   private model: string;
   private timeout: number;
   private readonly logger = new Logger(AiService.name);
@@ -39,9 +31,18 @@ export class AiService {
     private config: ConfigService,
     private prisma: PrismaService,
   ) {
-    this.openai = new OpenAI({ apiKey: config.get<string>('OPENAI_API_KEY') });
+    this.apiKey = config.get<string>('OPENAI_API_KEY');
     this.model = config.get<string>('OPENAI_MODEL', 'gpt-4o');
     this.timeout = config.get<number>('OPENAI_TIMEOUT_MS', 15000);
+  }
+
+  private client() {
+    if (!this.apiKey) {
+      throw new ServiceUnavailableException('OPENAI_API_KEY nao configurada');
+    }
+
+    this.openai ??= new OpenAI({ apiKey: this.apiKey });
+    return this.openai;
   }
 
   private async callWithLog<T>(
@@ -72,7 +73,7 @@ export class AiService {
           promptTokens,
           completionTokens,
           totalTokens,
-          estimatedCostUsd: new Decimal(estimatedCostUsd),
+          estimatedCostUsd: new Prisma.Decimal(estimatedCostUsd),
           latencyMs,
           success: true,
           userId,
@@ -90,7 +91,7 @@ export class AiService {
           promptTokens: 0,
           completionTokens: 0,
           totalTokens: 0,
-          estimatedCostUsd: new Decimal(0),
+          estimatedCostUsd: new Prisma.Decimal(0),
           latencyMs: Date.now() - start,
           success: false,
           errorMessage: err instanceof Error ? err.message : 'Unknown error',
@@ -103,7 +104,7 @@ export class AiService {
 
   async extractShoppingItem(message: string, userId: string): Promise<ShoppingExtraction> {
     return this.callWithLog('shopping', 'extract_item', userId, async () => {
-      const response = await this.openai.chat.completions.create({
+      const response = await this.client().chat.completions.create({
         model: this.model,
         messages: [
           {
@@ -113,7 +114,7 @@ Responda APENAS com JSON válido no formato:
 {
   "name": "nome do produto",
   "quantity": 1,
-  "unit": "kg|unidade|litro|pacote|etc (ou null)",
+  "unit": "uma destas unidades, quando aplicável: un, unidade, peça, par, kit, jogo, dúzia, pacote, caixa, fardo, saco, sacola, embalagem, refil, kg, g, mg, tonelada, arroba, L, ml, m³, galão, m, cm, mm, m², cm², lata, garrafa, pote, frasco, vidro, bisnaga, tubo, sachê, envelope, cartela, blister, barra, tablete, rolo, bobina, folha, maço, molho, ramo, cabeça, pé, bandeja, comprimido, cápsula, ampola, dose, porção, fatias, xícara, colher, pitada; use null se não houver unidade",
   "category": "Grãos|Laticínios|Carnes|Frutas e Verduras|Bebidas|Limpeza|Higiene|Condimentos|Padaria|Outros",
   "priority": "MEDIUM|HIGH|URGENT"
 }
@@ -135,7 +136,7 @@ Palavras como "urgente", "acabou", "faltou", "está acabando" indicam prioridade
 
   async extractReceipt(imageUrl: string, userId: string): Promise<ReceiptExtraction> {
     return this.callWithLog('finance', 'extract_receipt', userId, async () => {
-      const response = await this.openai.chat.completions.create({
+      const response = await this.client().chat.completions.create({
         model: this.model,
         messages: [
           {
@@ -168,45 +169,9 @@ Palavras como "urgente", "acabou", "faltou", "está acabando" indicam prioridade
     });
   }
 
-  async extractInventoryLabel(imageUrl: string, userId: string): Promise<InventoryExtraction> {
-    return this.callWithLog('inventory', 'extract_label', userId, async () => {
-      const response = await this.openai.chat.completions.create({
-        model: this.model,
-        messages: [
-          {
-            role: 'system',
-            content: `Extraia informações do produto ou etiqueta. Responda em JSON:
-{
-  "name": "nome do produto",
-  "quantity": 1,
-  "unit": "unidade|kg|g|litro|ml|pacote",
-  "expiresAt": "YYYY-MM-DD ou null",
-  "category": "categoria do produto ou null"
-}`,
-          },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: 'Extraia os dados desta etiqueta/embalagem:' },
-              { type: 'image_url', image_url: { url: imageUrl } },
-            ],
-          },
-        ],
-        response_format: { type: 'json_object' },
-      });
-
-      const content = response.choices[0].message.content ?? '{}';
-      return {
-        result: JSON.parse(content) as InventoryExtraction,
-        promptTokens: response.usage?.prompt_tokens ?? 0,
-        completionTokens: response.usage?.completion_tokens ?? 0,
-      };
-    });
-  }
-
   async extractEventFromDocument(imageUrl: string, userId: string) {
     return this.callWithLog('events', 'extract_document', userId, async () => {
-      const response = await this.openai.chat.completions.create({
+      const response = await this.client().chat.completions.create({
         model: this.model,
         messages: [
           {

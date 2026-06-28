@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface Notification {
   id: string;
@@ -25,7 +26,9 @@ export function Header({ title }: HeaderProps) {
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['notifications'],
     queryFn: () => api.get('/notifications').then((r) => r.data),
-    refetchInterval: 30000,
+    staleTime: 2 * 60 * 1000,
+    refetchInterval: 2 * 60 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   const unread = notifications.filter((n) => !n.readAt).length;
@@ -36,35 +39,43 @@ export function Header({ title }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white/85 px-4 backdrop-blur-xl sm:px-6">
       <div className="flex items-center gap-2">
-        <span className="text-2xl">🏡</span>
+        <span className="text-2xl md:hidden">🏠</span>
         <span className="font-semibold text-gray-800">{title ?? 'Família Maestre'}</span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
-          <Bell className="w-5 h-5" />
+      <div className="flex items-center gap-2 sm:gap-3">
+        <ThemeToggle />
+
+        <button
+          type="button"
+          onClick={() => router.push('/notificacoes')}
+          className="relative rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          title="Abrir notificações"
+        >
+          <Bell className="h-5 w-5" />
           {unread > 0 && (
-            <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white ring-2 ring-white">
               {unread > 9 ? '9+' : unread}
             </span>
           )}
         </button>
 
-        <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
-          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+        <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
             {user?.name?.[0]?.toUpperCase() ?? '?'}
           </div>
-          <span className="text-sm font-medium text-gray-700 hidden sm:block">{user?.name}</span>
+          <span className="hidden text-sm font-medium text-gray-700 sm:block">{user?.name}</span>
         </div>
 
         <button
+          type="button"
           onClick={handleLogout}
-          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+          className="rounded-lg p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
           title="Sair"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>

@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "installCommand": "npm install",
+  "buildCommand": "echo \"Serverless API build handled by Vercel\"",
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/auth/login",
+      "dest": "/api/auth/login.ts"
+    },
+    {
+      "src": "/auth/me",
+      "dest": "/api/auth/me.ts"
+    },
+    {
+      "src": "/auth/refresh",
+      "dest": "/api/auth/refresh.ts"
+    },
+    {
+      "src": "/users",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/notifications",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/shopping",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/finance/categories",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/finance/transactions",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/finance/summary",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/events",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/reports",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/purchases/products",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/purchases/receipts",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/purchases/history",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/purchases/import-qr",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/integrations/correios/status",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/integrations/correios/cep",
+      "dest": "/api/fast.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.ts"
+    }
+  ]
+}

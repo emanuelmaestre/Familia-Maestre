@@ -1,10 +1,11 @@
-import {
+﻿import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { StringValue } from 'ms';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -35,7 +36,7 @@ export class AuthService {
     const accessToken = this.jwt.sign(payload);
     const refreshToken = this.jwt.sign(payload, {
       secret: this.config.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN', '30d'),
+      expiresIn: this.config.get<StringValue>('JWT_REFRESH_EXPIRES_IN', '30d' as StringValue),
     });
 
     const { passwordHash: _, ...userWithoutHash } = user;
@@ -48,7 +49,7 @@ export class AuthService {
         secret: this.config.get<string>('JWT_REFRESH_SECRET'),
       });
 
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.user.findFirst({
         where: { id: payload.sub, deletedAt: null },
       });
 

@@ -1,10 +1,13 @@
 import axios from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3003');
 
 export const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
+  timeout: 15000,
 });
 
 api.interceptors.request.use((config) => {

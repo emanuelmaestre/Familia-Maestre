@@ -1,7 +1,6 @@
-import { NestFactory } from '@nestjs/core';
+﻿import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { IoAdapter } from '@nestjs/platform-socket.io';
 import * as Sentry from '@sentry/node';
 import { pino } from 'pino';
 import { AppModule } from './app.module';
@@ -20,8 +19,6 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  app.useWebSocketAdapter(new IoAdapter(app));
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -30,8 +27,19 @@ async function bootstrap() {
     }),
   );
 
+  const configuredOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((origin) => origin.trim()).filter(Boolean)
+    : [];
+
+  const allowedOrigins = [
+    ...configuredOrigins,
+    'https://familia-maestre.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3002',
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
   });
 
@@ -45,7 +53,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT ?? 3001;
+  const port = process.env.PORT ?? 3003;
   await app.listen(port);
   logger.info(`Backend rodando em http://localhost:${port}`);
   logger.info(`Swagger disponível em http://localhost:${port}/api/docs`);

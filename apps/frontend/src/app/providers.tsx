@@ -1,7 +1,6 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useState, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { NavigationProgress } from '@/components/nprogress';
@@ -12,8 +11,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000,
+            staleTime: 5 * 60 * 1000,
+            gcTime: 30 * 60 * 1000,
             retry: 1,
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            refetchOnWindowFocus: false,
+          },
+          mutations: {
+            retry: 0,
           },
         },
       }),
@@ -31,7 +37,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         closeButton
         duration={4000}
       />
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

@@ -67,16 +67,6 @@ export class ReportsService {
       data['finance'] = { transactions, income, expense, balance: income - expense };
     }
 
-    if (modules.includes('tasks') || modules.includes('all')) {
-      data['tasks'] = await this.prisma.taskCompletion.findMany({
-        where: { createdAt: { gte: from, lte: to } },
-        include: {
-          user: { select: { name: true } },
-          assignment: { include: { task: true } },
-        },
-      });
-    }
-
     if (modules.includes('events') || modules.includes('all')) {
       data['events'] = await this.prisma.event.findMany({
         where: { startsAt: { gte: from, lte: to }, deletedAt: null },
@@ -111,7 +101,7 @@ export class ReportsService {
 
       await this.notifications.sendToAll({
         type: NotificationType.REPORT_READY,
-        title: '📊 Relatório Semanal',
+        title: 'Relatório Semanal',
         message: `Relatório da semana de ${from.toLocaleDateString('pt-BR')} a ${to.toLocaleDateString('pt-BR')} disponível no dashboard.`,
       });
 
@@ -150,7 +140,7 @@ export class ReportsService {
       for (const admin of admins) {
         await this.notifications.send(admin.id, {
           type: NotificationType.REPORT_READY,
-          title: '📊 Fechamento Mensal',
+          title: 'Fechamento Mensal',
           message: `Relatório mensal de ${report.period} disponível no dashboard.`,
         });
       }
