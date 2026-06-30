@@ -199,7 +199,7 @@ export default function AgendaPage() {
       )}
 
       {/* ── Form drawer ────────────────────────────────────────── */}
-      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Evento">
+      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Evento" icon="edit_calendar">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input placeholder="Título *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input-control sm:col-span-2" />
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input-control">

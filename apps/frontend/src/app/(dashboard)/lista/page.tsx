@@ -98,7 +98,7 @@ export default function ListaPage() {
         </button>
       </div>
 
-      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Item">
+      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Item" icon="add_shopping_cart">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input placeholder="Nome do produto *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-control sm:col-span-2" />
           <input type="number" placeholder="Quantidade" value={form.quantity} min={0.01} step="any" onChange={(e) => setForm({ ...form, quantity: +e.target.value })} className="input-control" />

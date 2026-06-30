@@ -1,28 +1,23 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import { X } from 'lucide-react';
 
 interface ActionDrawerProps {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
+  icon?: string;
 }
 
-export function ActionDrawer({ open, title, children, onClose }: ActionDrawerProps) {
+export function ActionDrawer({ open, title, children, onClose, icon = 'edit_note' }: ActionDrawerProps) {
   useEffect(() => {
     if (!open) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
-
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
   }, [open, onClose]);
@@ -30,32 +25,59 @@ export function ActionDrawer({ open, title, children, onClose }: ActionDrawerPro
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 text-gray-900 animate-in fade-in duration-200">
-      <header className="flex min-h-16 items-center justify-between border-b border-gray-200 bg-white/95 px-4 shadow-sm backdrop-blur-xl sm:px-6">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-blue-600">Assistente</p>
-          <h2 className="text-lg font-semibold text-gray-950">{title}</h2>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: 'linear-gradient(135deg, #e8eef8 0%, #f0f4fc 100%)' }}>
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <header
+        className="flex-shrink-0 flex items-center justify-between px-5 py-4 md:px-8"
+        style={{
+          background: 'rgba(255,255,255,0.75)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(195,198,215,0.4)',
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl" style={{ background: 'rgba(0,87,217,0.08)' }}>
+            <span className="material-symbols-outlined text-[20px] text-[#0057D9]">{icon}</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#0057D9]">Assistente</p>
+            <h2 className="text-[17px] font-bold text-[#041a3f]" style={{ fontFamily: 'Plus Jakarta Sans' }}>
+              {title}
+            </h2>
+          </div>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-xl p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+          className="h-10 w-10 rounded-xl flex items-center justify-center text-[#4c5e86] transition hover:bg-white/60 hover:text-[#041a3f]"
           aria-label="Fechar"
         >
-          <X className="h-5 w-5" />
+          <span className="material-symbols-outlined text-[20px]">close</span>
         </button>
       </header>
 
-      <main className="flex-1 overflow-auto p-4 sm:p-6">
-        <section className="mx-auto flex min-h-full w-full max-w-6xl flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:p-8">
-          <div className="mb-6 border-b border-gray-100 pb-4">
-            <h3 className="text-xl font-semibold text-gray-950">{title}</h3>
-            <p className="mt-1 text-sm text-gray-500">Preencha as informacoes e salve para concluir.</p>
-          </div>
-          <div className="flex-1">
+      {/* ── Scrollable body ────────────────────────────────────── */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-2xl px-4 py-6 md:px-8 md:py-8">
+
+          {/* Card */}
+          <div
+            className="rounded-3xl p-6 md:p-8"
+            style={{
+              background: 'rgba(255,255,255,0.82)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(195,198,215,0.5)',
+              boxShadow: '0 8px 32px rgba(4,26,63,0.08)',
+            }}
+          >
+            <p className="text-[13px] text-[#4c5e86] mb-6">
+              Preencha as informações e salve para concluir.
+            </p>
             {children}
           </div>
-        </section>
+
+        </div>
       </main>
     </div>
   );

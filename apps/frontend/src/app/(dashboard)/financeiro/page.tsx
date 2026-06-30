@@ -279,7 +279,7 @@ export default function FinanceiroPage() {
       </div>
 
       {/* ── Form drawer ────────────────────────────────────────── */}
-      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Lançamento">
+      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Novo Lançamento" icon="payments">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input placeholder="Descrição *" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input-control sm:col-span-2" />
           <input placeholder="Fornecedor" value={form.supplierName} onChange={(e) => setForm({ ...form, supplierName: e.target.value })} className="input-control" />

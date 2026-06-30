@@ -192,7 +192,7 @@ export default function ConfiguracoesPage() {
       )}
 
       {/* ── Add member drawer ──────────────────────────────────── */}
-      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Adicionar Membro">
+      <ActionDrawer open={showForm} onClose={() => setShowForm(false)} title="Adicionar Membro" icon="person_add">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input placeholder="Nome *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-control" />
           <input placeholder="Telefone / WhatsApp *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-control" />
