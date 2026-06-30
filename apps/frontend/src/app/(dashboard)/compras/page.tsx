@@ -765,7 +765,7 @@ export default function ComprasPage() {
                 <input type="number" placeholder="Quantidade" value={itemForm.quantity} onChange={(e) => setItemForm({ ...itemForm, quantity: e.target.value })} className="input-control" />
               </div>
               <button type="button" onClick={addItem} className="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
-                <Plus className="mr-1 inline h-4 w-4" />
+                <span className="material-symbols-outlined mr-1 inline text-[16px] align-middle">add</span>
                 Adicionar item
               </button>
             </div>
