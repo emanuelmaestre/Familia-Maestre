@@ -677,22 +677,23 @@ export default function ComprasPage() {
                     onChange={(e) => setReceiptForm({ ...receiptForm, accessKey: e.target.value.replace(/\D/g,'').slice(0,44) })}
                     className="input-control text-[12px] text-center font-mono tracking-wide"
                     maxLength={44}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && receiptForm.accessKey.length === 44) {
-                        importFiscalDocument.mutate({ accessKey: receiptForm.accessKey });
-                      }
-                    }}
                   />
                   <p className="text-[10.5px] text-[#737686] mt-1.5">Encontrada no rodapé do cupom</p>
                   <button
                     type="button"
-                    disabled={receiptForm.accessKey.length !== 44 || importFiscalDocument.isPending}
-                    onClick={() => importFiscalDocument.mutate({ accessKey: receiptForm.accessKey })}
+                    disabled={receiptForm.accessKey.length !== 44}
+                    onClick={() => {
+                      setScannerStatus('Chave registrada! Preencha os dados do cupom e adicione os produtos abaixo.');
+                      setScannerError('');
+                      setScannedQr('key');
+                      document.getElementById('receipt-details')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                     className="mt-3 w-full rounded-xl py-2.5 text-[12.5px] font-bold text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}
                   >
-                    {importFiscalDocument.isPending ? 'Buscando NF-e...' : `Buscar NF-e ${receiptForm.accessKey.length}/44`}
+                    {`Usar esta chave ${receiptForm.accessKey.length}/44`}
                   </button>
+                  <p className="text-[10px] text-[#737686] mt-1">A chave identifica a NF-e. Dados e produtos devem ser adicionados manualmente.</p>
                 </div>
               </div>
             </div>
@@ -774,7 +775,7 @@ export default function ComprasPage() {
             <div className="space-y-4">
 
               {/* Dados do cupom */}
-              <div className="glass-card p-6">
+              <div id="receipt-details" className="glass-card p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="material-symbols-outlined text-[18px] text-[#4c5e86]">store</span>
                   <h4 className="text-[14px] font-bold text-[#041a3f]" style={{ fontFamily: 'Plus Jakarta Sans' }}>Dados do cupom</h4>
