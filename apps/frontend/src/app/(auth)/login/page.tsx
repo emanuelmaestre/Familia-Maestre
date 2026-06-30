@@ -84,7 +84,7 @@ export default function LoginPage() {
                 aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-white/10 dark:hover:text-white"
+                className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>

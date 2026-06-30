@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import jsQR from 'jsqr';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { ClipboardList, History, PackageSearch, Plus, ReceiptText, ScanLine } from 'lucide-react';
+// icons via Material Symbols (globals.css)
 
 type Tab = 'lista' | 'produtos' | 'cupons' | 'historico';
 type PaymentMethod = 'PIX' | 'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD';
@@ -14,6 +14,10 @@ type PaymentMethod = 'PIX' | 'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD';
 interface Product {
   id: string;
   name: string;
+  normalizedName?: string;
+  brand?: string;
+  category?: string;
+  variant?: string;
   lastUnitPrice?: string;
   unit?: string;
   taxes?: string;
@@ -78,11 +82,11 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CREDIT_CARD: 'Cartão de Crédito',
 };
 
-const tabs: Array<{ key: Tab; label: string; icon: typeof ClipboardList }> = [
-  { key: 'lista', label: 'Lista de Compras', icon: ClipboardList },
-  { key: 'produtos', label: 'Produtos', icon: PackageSearch },
-  { key: 'cupons', label: 'Cupons Fiscais', icon: ReceiptText },
-  { key: 'historico', label: 'Histórico', icon: History },
+const tabs: Array<{ key: Tab; label: string; icon: string }> = [
+  { key: 'lista',     label: 'Lista de Compras', icon: 'list_alt' },
+  { key: 'produtos',  label: 'Produtos',          icon: 'inventory_2' },
+  { key: 'cupons',    label: 'Cupons Fiscais',    icon: 'receipt_long' },
+  { key: 'historico', label: 'Histórico',         icon: 'history' },
 ];
 
 function extractAccessKey(rawValue: string) {
@@ -499,50 +503,56 @@ export default function ComprasPage() {
 
   return (
     <div className="app-page space-y-5">
-      <section className="surface-soft p-5 sm:p-6">
+      <section className="glass-card p-6 sm:p-7">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-sm font-medium text-blue-700">Módulo de compras</p>
-            <h2 className="mt-1 text-2xl font-bold text-gray-950">Compras, produtos e cupons fiscais</h2>
-            <p className="mt-2 max-w-3xl text-sm text-gray-600">
-              A lista atual continua aqui, e a base está preparada para receber uma engine fiscal externa para importar cupons e atualizar produtos.
+            <p className="section-badge mb-3">
+              <span className="material-symbols-outlined text-[12px]">shopping_bag</span>
+              Módulo de compras
+            </p>
+            <h2 className="text-[24px] font-bold text-[#041a3f]" style={{ fontFamily: 'Plus Jakarta Sans' }}>
+              Compras, produtos e cupons fiscais
+            </h2>
+            <p className="mt-2 max-w-3xl text-[13.5px] text-[#4c5e86] leading-relaxed">
+              Importe cupons fiscais, gerencie produtos e visualize o histórico de compras da família.
             </p>
           </div>
-          <button type="button" onClick={() => setActiveTab('cupons')} className="btn-primary">
-            <ScanLine className="h-4 w-4" />
+          <button type="button" onClick={() => setActiveTab('cupons')} className="btn-primary w-full lg:w-auto justify-center">
+            <span className="material-symbols-outlined text-[16px]">qr_code_scanner</span>
             Importar cupom
           </button>
         </div>
       </section>
 
-      <div className="flex flex-wrap gap-2">
-        {tabs.map(({ key, label, icon: Icon }) => (
+      <div className="flex overflow-x-auto gap-2 scrollbar-hide pb-1">
+        {tabs.map(({ key, label, icon }) => (
           <button
             key={key}
             type="button"
             onClick={() => setActiveTab(key)}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+            className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all whitespace-nowrap flex-shrink-0 min-h-[44px] ${
               activeTab === key
-                ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-                : 'border border-gray-200 bg-white/80 text-gray-600 hover:bg-white'
+                ? 'bg-[#0057D9] text-white shadow-[0_4px_14px_rgba(0,87,217,0.3)]'
+                : 'glass-card text-[#4c5e86] hover:text-[#041a3f]'
             }`}
           >
-            <Icon className="h-4 w-4" />
+            <span className="material-symbols-outlined text-[16px]">{icon}</span>
             {label}
           </button>
         ))}
       </div>
 
       {activeTab === 'lista' && (
-        <section className="surface p-5">
+        <section className="glass-card p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="font-semibold text-gray-950">Lista de Compras</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Você tem {pendingItems.length} item(ns) pendente(s). A tela operacional da lista permanece disponível.
+              <h3 className="text-[16px] font-bold text-[#041a3f]">Lista de Compras</h3>
+              <p className="mt-1 text-[13px] text-[#4c5e86]">
+                Você tem {pendingItems.length} item(ns) pendente(s).
               </p>
             </div>
-            <Link href="/lista" className="btn-primary">
+            <Link href="/lista" className="btn-primary no-underline">
+              <span className="material-symbols-outlined text-[16px]">open_in_new</span>
               Abrir lista
             </Link>
           </div>
@@ -550,32 +560,38 @@ export default function ComprasPage() {
       )}
 
       {activeTab === 'produtos' && (
-        <section className="surface overflow-x-auto">
+        <section className="glass-card">
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50">
+            <thead style={{ borderBottom: '1px solid rgba(195,198,215,0.4)' }}>
               <tr>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Produto</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Valor unitário</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Unidade</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Impostos</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Última compra</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600">Fornecedor</th>
+                {['Produto','Marca','Categoria','Valor unitário','Unidade','Impostos','Última compra','Fornecedor'].map((h) => (
+                  <th key={h} className="px-4 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider text-[#4c5e86]">{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {products.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{product.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{product.lastUnitPrice ? formatCurrency(Number(product.lastUnitPrice)) : '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{product.unit ?? '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{product.taxes ? formatCurrency(Number(product.taxes)) : '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{product.lastPurchasedAt ? formatDate(product.lastPurchasedAt) : '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{product.lastSupplierName ?? '-'}</td>
+                <tr key={product.id} className="hover:bg-white/50 transition-colors" style={{ borderBottom: '1px solid rgba(195,198,215,0.25)' }}>
+                  <td className="px-4 py-3.5 font-semibold text-[#191c1e]">
+                    {product.normalizedName ?? product.name}
+                    {product.variant && <span className="ml-1 text-[11px] text-[#737686]">{product.variant}</span>}
+                  </td>
+                  <td className="px-4 py-3.5 text-[#4c5e86]">{product.brand ?? '-'}</td>
+                  <td className="px-4 py-3.5 text-[#4c5e86]">{product.category ?? '-'}</td>
+                  <td className="px-4 py-3.5 text-[#4c5e86]">{product.lastUnitPrice ? formatCurrency(Number(product.lastUnitPrice)) : '-'}</td>
+                  <td className="px-4 py-3.5 text-[#4c5e86]">{product.unit ?? '-'}</td>
+                  <td className="px-4 py-3.5 text-[#4c5e86]">{product.taxes ? formatCurrency(Number(product.taxes)) : '-'}</td>
+                  <td className="px-4 py-3.5 text-[#4c5e86]">{product.lastPurchasedAt ? formatDate(product.lastPurchasedAt) : '-'}</td>
+                  <td className="px-4 py-3.5 text-[#4c5e86]">{product.lastSupplierName ?? '-'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {products.length === 0 && <p className="py-8 text-center text-sm text-gray-400">Nenhum produto importado ainda.</p>}
+          </div>
+          {products.length === 0 && (
+            <p className="py-10 text-center text-[13px] font-medium text-[#737686]">Nenhum produto importado ainda.</p>
+          )}
         </section>
       )}
 
@@ -596,7 +612,7 @@ export default function ComprasPage() {
                   </p>
                 </div>
                 <button type="button" onClick={() => setScannerOpen(true)} className="btn-primary">
-                  <ScanLine className="h-4 w-4" />
+                  <span className="material-symbols-outlined text-[16px]">photo_camera</span>
                   Abrir câmera
                 </button>
               </div>
@@ -785,7 +801,8 @@ export default function ComprasPage() {
       )}
 
       {activeTab === 'historico' && (
-        <section className="surface overflow-x-auto">
+        <section className="glass-card">
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[1240px] text-sm">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
@@ -818,13 +835,15 @@ export default function ComprasPage() {
               ))}
             </tbody>
           </table>
-          {history.length === 0 && <p className="py-8 text-center text-sm text-gray-400">Nenhuma compra importada ainda.</p>}
+          </div>
+          {history.length === 0 && <p className="py-8 text-center text-[13px] font-medium text-[#737686]">Nenhuma compra importada ainda.</p>}
         </section>
       )}
 
       {activeTab === 'cupons' && receipts.length > 0 && (
-        <section className="surface overflow-x-auto">
-          <h3 className="px-5 pt-5 font-semibold text-gray-950">Cupons importados</h3>
+        <section className="glass-card">
+          <h3 className="px-5 pt-5 font-semibold text-[#041a3f]">Cupons importados</h3>
+          <div className="overflow-x-auto">
           <table className="mt-4 w-full min-w-[900px] text-sm">
             <thead className="border-b border-gray-200 bg-gray-50">
               <tr>
@@ -849,6 +868,7 @@ export default function ComprasPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </section>
       )}
     </div>

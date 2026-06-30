@@ -19,6 +19,13 @@ interface ReceiptExtraction {
   storeName?: string;
 }
 
+export interface ProductNormalization {
+  normalizedName: string;
+  brand: string | null;
+  category: string;
+  variant: string | null;
+}
+
 @Injectable()
 export class AiService {
   private openai?: OpenAI;
@@ -128,6 +135,43 @@ Palavras como "urgente", "acabou", "faltou", "está acabando" indicam prioridade
       const content = response.choices[0].message.content ?? '{}';
       return {
         result: JSON.parse(content) as ShoppingExtraction,
+        promptTokens: response.usage?.prompt_tokens ?? 0,
+        completionTokens: response.usage?.completion_tokens ?? 0,
+      };
+    });
+  }
+
+  async normalizeProduct(rawName: string): Promise<ProductNormalization> {
+    return this.callWithLog('purchases', 'normalize_product', undefined, async () => {
+      const response = await this.client().chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: `Você interpreta nomes de produtos de cupons fiscais brasileiros (abreviados, em caixa alta) e retorna informações organizadas.
+Responda APENAS com JSON válido:
+{
+  "normalizedName": "nome legível do produto em português (ex: Hamburguer Bovino)",
+  "brand": "marca do produto ou null se não identificável (ex: Friboi, Heinz, null)",
+  "category": "uma destas categorias: Carnes|Laticínios|Grãos e Cereais|Frutas e Verduras|Bebidas|Limpeza|Higiene|Padaria|Congelados|Frios e Embutidos|Condimentos e Temperos|Conservas|Massas e Molhos|Snacks|Outros",
+  "variant": "variante/tamanho/formato do produto ou null (ex: 36x56g, 400g, 1,033kg, null)"
+}
+
+Exemplos:
+- "HAMB BOV FRIB 36X56G" → {"normalizedName":"Hamburguer Bovino","brand":"Friboi","category":"Congelados","variant":"36x56g"}
+- "10G NAT ITA 170G INT" → {"normalizedName":"Iogurte Natural Integral","brand":"Itambé","category":"Laticínios","variant":"170g"}
+- "CATCH HEINZ 1,033KG" → {"normalizedName":"Catchup","brand":"Heinz","category":"Condimentos e Temperos","variant":"1,033kg"}
+- "MAION HEINZ 400G" → {"normalizedName":"Maionese","brand":"Heinz","category":"Condimentos e Temperos","variant":"400g"}
+- "PATINHO BOV FC KG" → {"normalizedName":"Patinho Bovino","brand":null,"category":"Carnes","variant":null}`,
+          },
+          { role: 'user', content: rawName },
+        ],
+        response_format: { type: 'json_object' },
+      });
+
+      const content = response.choices[0].message.content ?? '{}';
+      return {
+        result: JSON.parse(content) as ProductNormalization,
         promptTokens: response.usage?.prompt_tokens ?? 0,
         completionTokens: response.usage?.completion_tokens ?? 0,
       };

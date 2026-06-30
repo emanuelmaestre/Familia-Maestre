@@ -4,6 +4,7 @@ import { User } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CreateReceiptDto, PurchasesService } from './purchases.service';
+import { runFiscalEngine, type FiscalEngineInput } from './fiscal-engine';
 
 @ApiTags('purchases')
 @ApiBearerAuth()
@@ -30,5 +31,10 @@ export class PurchasesController {
   @Post('receipts')
   createReceipt(@Body() dto: CreateReceiptDto, @CurrentUser() user: User) {
     return this.purchasesService.createReceipt(dto, user.id);
+  }
+
+  @Post('import-qr')
+  importQr(@Body() dto: FiscalEngineInput) {
+    return runFiscalEngine(dto);
   }
 }

@@ -177,6 +177,10 @@ model ShoppingItem {
 model Product {
   id               String    @id @default(cuid())
   name             String    @unique
+  normalizedName   String?
+  brand            String?
+  category         String?
+  variant          String?
   lastUnitPrice    Decimal?  @db.Decimal(10, 2)
   unit             String?
   taxes            Decimal?  @db.Decimal(10, 2)
@@ -188,6 +192,8 @@ model Product {
 
   historyItems PurchaseHistoryItem[]
 
+  @@index([brand])
+  @@index([category])
   @@map("products")
 }
 

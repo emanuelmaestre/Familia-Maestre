@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" && start http://localhost:3000",
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev:frontend": "npm run dev --workspace=apps/frontend",
     "build": "npm run build --workspace=apps/backend && npm run build --workspace=apps/frontend",

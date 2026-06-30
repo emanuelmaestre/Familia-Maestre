@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PaymentMethod, Prisma, TransactionType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AiService } from '../ai/ai.service';
 
 export interface ReceiptItemDto {
   productName: string;
@@ -28,7 +29,12 @@ export interface CreateReceiptDto {
 
 @Injectable()
 export class PurchasesService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(PurchasesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ai: AiService,
+  ) {}
 
   findProducts() {
     return this.prisma.product.findMany({
@@ -79,11 +85,29 @@ export class PurchasesService {
         },
       });
 
-      for (const item of dto.items) {
+      // Normaliza os nomes de todos os itens em paralelo antes de abrir a transação interna
+      const normalizations = await Promise.all(
+        dto.items.map(async (item) => {
+          try {
+            return await this.ai.normalizeProduct(item.productName);
+          } catch (err) {
+            this.logger.warn(`Não foi possível normalizar "${item.productName}": ${err}`);
+            return null;
+          }
+        }),
+      );
+
+      for (let i = 0; i < dto.items.length; i++) {
+        const item = dto.items[i];
+        const norm = normalizations[i];
         const itemTotal = new Prisma.Decimal(item.unitPrice).mul(item.quantity).minus(item.discount ?? 0);
         const product = await tx.product.upsert({
           where: { name: item.productName },
           update: {
+            normalizedName: norm?.normalizedName,
+            brand: norm?.brand ?? undefined,
+            category: norm?.category,
+            variant: norm?.variant ?? undefined,
             lastUnitPrice: new Prisma.Decimal(item.unitPrice),
             unit: item.unit,
             taxes: item.taxes !== undefined ? new Prisma.Decimal(item.taxes) : undefined,
@@ -93,6 +117,10 @@ export class PurchasesService {
           },
           create: {
             name: item.productName,
+            normalizedName: norm?.normalizedName,
+            brand: norm?.brand ?? undefined,
+            category: norm?.category,
+            variant: norm?.variant ?? undefined,
             lastUnitPrice: new Prisma.Decimal(item.unitPrice),
             unit: item.unit,
             taxes: item.taxes !== undefined ? new Prisma.Decimal(item.taxes) : undefined,
