@@ -89,6 +89,29 @@ const tabs: Array<{ key: Tab; label: string; icon: string }> = [
   { key: 'historico', label: 'Histórico',         icon: 'history' },
 ];
 
+const UF_CODES: Record<string, string> = {
+  '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
+  '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL','28':'SE','29':'BA',
+  '31':'MG','32':'ES','33':'RJ','35':'SP',
+  '41':'PR','42':'SC','43':'RS',
+  '50':'MS','51':'MT','52':'GO','53':'DF',
+};
+
+function parseNFeKey(key: string): { documentNumber: string; purchaseDate: string; uf: string; nNF: string } | null {
+  if (key.length !== 44) return null;
+  const cUF   = key.slice(0, 2);
+  const year  = '20' + key.slice(2, 4);
+  const month = key.slice(4, 6);
+  const cnpj  = key.slice(6, 20);
+  const nNF   = key.slice(25, 34).replace(/^0+/, '') || '1';
+  return {
+    documentNumber: cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'),
+    purchaseDate: `${year}-${month}-01`,
+    uf: UF_CODES[cUF] ?? cUF,
+    nNF,
+  };
+}
+
 function extractAccessKey(rawValue: string) {
   try {
     const url = new URL(rawValue);
@@ -683,7 +706,19 @@ export default function ComprasPage() {
                     type="button"
                     disabled={receiptForm.accessKey.length !== 44}
                     onClick={() => {
-                      setScannerStatus('Chave registrada! Preencha os dados do cupom e adicione os produtos abaixo.');
+                      const parsed = parseNFeKey(receiptForm.accessKey);
+                      if (parsed) {
+                        setReceiptForm((f) => ({
+                          ...f,
+                          documentNumber: parsed.documentNumber,
+                          purchaseDate: parsed.purchaseDate,
+                        }));
+                        setScannerStatus(
+                          `NF-e ${parsed.uf} · Nota nº ${parsed.nNF} · CNPJ ${parsed.documentNumber} · ${parsed.purchaseDate.slice(0,7)}. Confira a data e adicione os produtos.`
+                        );
+                      } else {
+                        setScannerStatus('Chave registrada. Preencha os dados do cupom e adicione os produtos abaixo.');
+                      }
                       setScannerError('');
                       setScannedQr('key');
                       document.getElementById('receipt-details')?.scrollIntoView({ behavior: 'smooth' });
