@@ -677,8 +677,22 @@ export default function ComprasPage() {
                     onChange={(e) => setReceiptForm({ ...receiptForm, accessKey: e.target.value.replace(/\D/g,'').slice(0,44) })}
                     className="input-control text-[12px] text-center font-mono tracking-wide"
                     maxLength={44}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && receiptForm.accessKey.length === 44) {
+                        importFiscalDocument.mutate({ accessKey: receiptForm.accessKey });
+                      }
+                    }}
                   />
                   <p className="text-[10.5px] text-[#737686] mt-1.5">Encontrada no rodapé do cupom</p>
+                  <button
+                    type="button"
+                    disabled={receiptForm.accessKey.length !== 44 || importFiscalDocument.isPending}
+                    onClick={() => importFiscalDocument.mutate({ accessKey: receiptForm.accessKey })}
+                    className="mt-3 w-full rounded-xl py-2.5 text-[12.5px] font-bold text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}
+                  >
+                    {importFiscalDocument.isPending ? 'Buscando NF-e...' : `Buscar NF-e ${receiptForm.accessKey.length}/44`}
+                  </button>
                 </div>
               </div>
             </div>
