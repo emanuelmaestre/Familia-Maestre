@@ -596,205 +596,272 @@ export default function ComprasPage() {
       )}
 
       {activeTab === 'cupons' && (
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="surface p-5">
-            <h3 className="font-semibold text-gray-950">Escanear ou importar cupom fiscal</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Use a câmera para capturar o QR Code da NFC-e. A análise automática foi removida e será substituída por uma nova engine fiscal.
-            </p>
+        <section className="space-y-5">
 
-            <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h4 className="font-medium text-gray-950">Leitor de QR Code</h4>
-                  <p className="mt-1 text-sm text-gray-600">
-                    Captura o código no navegador. A importação dos produtos ficará a cargo da nova engine fiscal.
-                  </p>
-                </div>
-                <button type="button" onClick={() => setScannerOpen(true)} className="btn-primary">
-                  <span className="material-symbols-outlined text-[16px]">photo_camera</span>
-                  Abrir câmera
-                </button>
+          {/* ── Step 1: choose import method ─────────────────────── */}
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2.5 rounded-xl" style={{ background: 'rgba(0,87,217,0.08)' }}>
+                <span className="material-symbols-outlined text-[20px] text-[#0057D9]">receipt_long</span>
               </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3">
-                <textarea
-                  placeholder="QR Code / URL da NFC-e"
-                  value={receiptForm.qrCodeRaw}
-                  onChange={(e) => {
-                    const rawValue = e.target.value;
-                    setReceiptForm({
-                      ...receiptForm,
-                      qrCodeRaw: rawValue,
-                      url: rawValue.startsWith('http') ? rawValue : receiptForm.url,
-                      accessKey: extractAccessKey(rawValue) || receiptForm.accessKey,
-                    });
-                  }}
-                  rows={2}
-                  className="input-control"
-                />
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fiscalFileInputRef.current?.click()}
-                    disabled={importFiscalDocument.isPending}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {importFiscalDocument.isPending ? 'Processando cupom...' : 'Enviar imagem/PDF do cupom'}
-                  </button>
-                  <input
-                    ref={fiscalFileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void readQrFromImage(file);
-                      event.currentTarget.value = '';
-                    }}
-                  />
-                </div>
-                {scannerStatus && !scannerOpen && (
-                  <p className="rounded-lg bg-white px-3 py-2 text-xs text-blue-700">
-                    {scannerStatus}
-                  </p>
-                )}
-                {scannedQr && (
-                  <p className="rounded-lg bg-white px-3 py-2 text-xs text-gray-500">
-                    QR Code lido e aplicado ao formulário.
-                  </p>
-                )}
+              <div>
+                <h3 className="text-[16px] font-bold text-[#041a3f]" style={{ fontFamily: 'Plus Jakarta Sans' }}>
+                  Importar cupom fiscal
+                </h3>
+                <p className="text-[12.5px] text-[#4c5e86] mt-0.5">Escolha como deseja importar a nota</p>
               </div>
             </div>
 
-            {scannerOpen && (
-              <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white">
-                <header className="flex items-center justify-between border-b border-white/10 px-4 py-4">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-blue-300">Cupons Fiscais</p>
-                    <h3 className="text-lg font-semibold">Escanear QR Code</h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setScannerOpen(false)}
-                    className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white/20"
-                  >
-                    Fechar
-                  </button>
-                </header>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Câmera */}
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="flex flex-col items-center gap-3 rounded-2xl p-5 text-center transition-all hover:-translate-y-0.5"
+                style={{ background: 'linear-gradient(135deg,rgba(0,87,217,0.07),rgba(56,189,248,0.05))', border: '1px solid rgba(0,87,217,0.18)' }}
+              >
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(0,87,217,0.1)' }}>
+                  <span className="material-symbols-outlined text-[26px] text-[#0057D9]" style={{ fontVariationSettings: "'FILL' 1" }}>qr_code_scanner</span>
+                </div>
+                <div>
+                  <p className="text-[13.5px] font-bold text-[#041a3f]">Câmera</p>
+                  <p className="text-[11.5px] text-[#4c5e86] mt-0.5">Aponte para o QR Code da NF-e</p>
+                </div>
+              </button>
 
-                <main className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
-                  <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
-                    <video ref={videoRef} className="aspect-video w-full bg-black object-cover" muted autoPlay playsInline />
-                    <canvas ref={canvasRef} className="hidden" />
-                    <div className="pointer-events-none absolute inset-8 rounded-2xl border-2 border-blue-400/80 shadow-[0_0_0_999px_rgba(15,23,42,0.35)]" />
-                  </div>
-                  {scannerStatus && <p className="text-center text-xs font-medium text-blue-200">{scannerStatus}</p>}
-                  <p className="max-w-xl text-center text-sm text-slate-300">
-                    Aponte a câmera para o QR Code do cupom fiscal. A leitura fecha automaticamente quando encontrar o código.
+              {/* Arquivo */}
+              <button
+                type="button"
+                onClick={() => fiscalFileInputRef.current?.click()}
+                disabled={importFiscalDocument.isPending}
+                className="flex flex-col items-center gap-3 rounded-2xl p-5 text-center transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ background: 'linear-gradient(135deg,rgba(16,185,129,0.07),rgba(16,185,129,0.03))', border: '1px solid rgba(16,185,129,0.2)' }}
+              >
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                  <span className="material-symbols-outlined text-[26px] text-[#10B981]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {importFiscalDocument.isPending ? 'hourglass_empty' : 'upload_file'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[13.5px] font-bold text-[#041a3f]">
+                    {importFiscalDocument.isPending ? 'Processando...' : 'Foto ou PDF'}
                   </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-500"
-                    >
-                      Tirar foto do QR Code
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setScannerOpen(false);
-                        window.setTimeout(() => setScannerOpen(true), 150);
-                      }}
-                      className="rounded-lg bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white/20"
-                    >
-                      Reiniciar camera
-                    </button>
-                  </div>
+                  <p className="text-[11.5px] text-[#4c5e86] mt-0.5">Foto do cupom ou arquivo PDF</p>
+                </div>
+              </button>
+              <input
+                ref={fiscalFileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void readQrFromImage(file);
+                  event.currentTarget.value = '';
+                }}
+              />
+
+              {/* Chave de acesso manual */}
+              <div
+                className="flex flex-col items-center gap-3 rounded-2xl p-5 text-center"
+                style={{ background: 'linear-gradient(135deg,rgba(245,158,11,0.07),rgba(245,158,11,0.03))', border: '1px solid rgba(245,158,11,0.2)' }}
+              >
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)' }}>
+                  <span className="material-symbols-outlined text-[26px] text-[#F59E0B]" style={{ fontVariationSettings: "'FILL' 1" }}>key</span>
+                </div>
+                <div className="w-full">
+                  <p className="text-[13.5px] font-bold text-[#041a3f] mb-2">Chave de acesso</p>
                   <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void readQrFromImage(file);
-                    }}
+                    placeholder="44 dígitos da NF-e"
+                    value={receiptForm.accessKey}
+                    onChange={(e) => setReceiptForm({ ...receiptForm, accessKey: e.target.value.replace(/\D/g,'').slice(0,44) })}
+                    className="input-control text-[12px] text-center font-mono tracking-wide"
+                    maxLength={44}
                   />
-                  {scannerError && (
-                    <div className="max-w-xl rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-center text-sm text-red-100">
-                      {scannerError}
-                    </div>
-                  )}
-                </main>
+                  <p className="text-[10.5px] text-[#737686] mt-1.5">Encontrada no rodapé do cupom</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status / feedback */}
+            {(scannerStatus || scannerError || scannedQr) && (
+              <div className={`mt-4 flex items-center gap-2 rounded-2xl px-4 py-3 text-[13px] font-medium ${
+                scannerError
+                  ? 'text-[#EF4444]' : 'text-[#0057D9]'
+              }`} style={{ background: scannerError ? 'rgba(239,68,68,0.07)' : 'rgba(0,87,217,0.07)', border: `1px solid ${scannerError ? 'rgba(239,68,68,0.2)' : 'rgba(0,87,217,0.15)'}` }}>
+                <span className="material-symbols-outlined text-[16px]">
+                  {scannerError ? 'error' : scannedQr ? 'check_circle' : 'info'}
+                </span>
+                {scannerError || (scannedQr ? 'QR Code lido com sucesso — dados aplicados ao formulário abaixo.' : scannerStatus)}
               </div>
             )}
-
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input placeholder="Chave de acesso" value={receiptForm.accessKey} onChange={(e) => setReceiptForm({ ...receiptForm, accessKey: e.target.value })} className="input-control sm:col-span-2" />
-              <input placeholder="Fornecedor / Razão social" value={receiptForm.supplierName} onChange={(e) => setReceiptForm({ ...receiptForm, supplierName: e.target.value })} className="input-control" />
-              <input placeholder="Nome fantasia" value={receiptForm.tradeName} onChange={(e) => setReceiptForm({ ...receiptForm, tradeName: e.target.value })} className="input-control" />
-              <input placeholder="CPF/CNPJ" value={receiptForm.documentNumber} onChange={(e) => setReceiptForm({ ...receiptForm, documentNumber: e.target.value })} className="input-control" />
-              <input type="date" value={receiptForm.purchaseDate} onChange={(e) => setReceiptForm({ ...receiptForm, purchaseDate: e.target.value })} className="input-control" />
-              <select value={receiptForm.paymentMethod} onChange={(e) => setReceiptForm({ ...receiptForm, paymentMethod: e.target.value })} className="input-control">
-                <option value="PIX">PIX</option>
-                <option value="CASH">Dinheiro</option>
-                <option value="DEBIT_CARD">Cartão de Débito</option>
-                <option value="CREDIT_CARD">Cartão de Crédito</option>
-              </select>
-              {receiptForm.paymentMethod === 'CREDIT_CARD' && (
-                <input maxLength={4} placeholder="4 últimos dígitos" value={receiptForm.cardLast4} onChange={(e) => setReceiptForm({ ...receiptForm, cardLast4: e.target.value.replace(/\D/g, '').slice(0, 4) })} className="input-control" />
-              )}
-              <input type="number" placeholder={`Total ${receiptTotal ? formatCurrency(receiptTotal) : ''}`} value={receiptForm.totalAmount} onChange={(e) => setReceiptForm({ ...receiptForm, totalAmount: e.target.value })} className="input-control" />
-              <label className="flex items-center gap-2 text-sm text-gray-700 sm:col-span-2">
-                <input type="checkbox" checked={receiptForm.createFinancialDebit} onChange={(e) => setReceiptForm({ ...receiptForm, createFinancialDebit: e.target.checked })} className="rounded" />
-                Criar débito no financeiro
-              </label>
-            </div>
-
-            <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <h4 className="font-medium text-gray-900">Adicionar produto do cupom</h4>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input placeholder="Nome do produto" value={itemForm.productName} onChange={(e) => setItemForm({ ...itemForm, productName: e.target.value })} className="input-control sm:col-span-2" />
-                <input type="number" placeholder="Valor unitário" value={itemForm.unitPrice} onChange={(e) => setItemForm({ ...itemForm, unitPrice: e.target.value })} className="input-control" />
-                <input placeholder="Unidade" value={itemForm.unit} onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })} className="input-control" />
-                <input type="number" placeholder="Impostos" value={itemForm.taxes} onChange={(e) => setItemForm({ ...itemForm, taxes: e.target.value })} className="input-control" />
-                <input type="number" placeholder="Desconto" value={itemForm.discount} onChange={(e) => setItemForm({ ...itemForm, discount: e.target.value })} className="input-control" />
-                <input type="number" placeholder="Quantidade" value={itemForm.quantity} onChange={(e) => setItemForm({ ...itemForm, quantity: e.target.value })} className="input-control" />
-              </div>
-              <button type="button" onClick={addItem} className="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100">
-                <span className="material-symbols-outlined mr-1 inline text-[16px] align-middle">add</span>
-                Adicionar item
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => createReceipt.mutate()}
-              disabled={items.length === 0 || createReceipt.isPending}
-              className="btn-primary mt-5"
-            >
-              {createReceipt.isPending ? 'Importando...' : 'Salvar cupom e gerar débito'}
-            </button>
           </div>
 
-          <div className="surface p-5">
-            <h3 className="font-semibold text-gray-950">Itens deste cupom</h3>
-            <div className="mt-4 space-y-2">
-              {items.map((item, index) => (
-                <div key={`${item.productName}-${index}`} className="rounded-xl border border-gray-100 p-3 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-medium text-gray-900">{item.productName}</span>
-                    <span className="text-gray-600">{formatCurrency(Number(item.unitPrice || 0))} x {item.quantity} {item.unit}</span>
+          {/* ── Camera scanner overlay ────────────────────────────── */}
+          {scannerOpen && (
+            <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 text-white">
+              <header className="flex-shrink-0 flex items-center justify-between px-5 py-4"
+                style={{ background: 'rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-[22px] text-[#38BDF8]">qr_code_scanner</span>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#38BDF8]">Cupons Fiscais</p>
+                    <h3 className="text-[17px] font-bold">Escanear QR Code</h3>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Impostos: {item.taxes ? formatCurrency(Number(item.taxes)) : '-'} | Desconto: {item.discount ? formatCurrency(Number(item.discount)) : '-'}
-                  </p>
                 </div>
-              ))}
-              {items.length === 0 && <p className="py-8 text-center text-sm text-gray-400">Nenhum item adicionado.</p>}
+                <button type="button" onClick={() => setScannerOpen(false)}
+                  className="h-10 w-10 rounded-xl flex items-center justify-center transition hover:bg-white/10">
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </header>
+
+              <main className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
+                <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+                  <video ref={videoRef} className="aspect-video w-full bg-black object-cover" muted autoPlay playsInline />
+                  <canvas ref={canvasRef} className="hidden" />
+                  <div className="pointer-events-none absolute inset-10 rounded-2xl border-2 border-[#38BDF8]/80 shadow-[0_0_0_999px_rgba(15,23,42,0.4)]" />
+                </div>
+                {scannerStatus && (
+                  <p className="text-center text-[12.5px] font-medium text-blue-300">{scannerStatus}</p>
+                )}
+                <p className="max-w-sm text-center text-[13px] text-slate-400">
+                  Aponte para o QR Code do cupom — a leitura fecha automaticamente.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    className="btn-primary">
+                    <span className="material-symbols-outlined text-[16px]">photo_camera</span>
+                    Tirar foto
+                  </button>
+                  <button type="button"
+                    onClick={() => { setScannerOpen(false); window.setTimeout(() => setScannerOpen(true), 150); }}
+                    className="rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white transition"
+                    style={{ background: 'rgba(255,255,255,0.1)' }}>
+                    <span className="material-symbols-outlined text-[16px] align-middle mr-1">refresh</span>
+                    Reiniciar
+                  </button>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden"
+                  onChange={(event) => { const f = event.target.files?.[0]; if (f) void readQrFromImage(f); }} />
+                {scannerError && (
+                  <div className="max-w-sm rounded-2xl p-3 text-center text-[12.5px] text-red-200"
+                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                    {scannerError}
+                  </div>
+                )}
+              </main>
+            </div>
+          )}
+
+          {/* ── Step 2: receipt details + items ──────────────────── */}
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-5">
+
+            {/* Left: dados do cupom + produtos */}
+            <div className="space-y-4">
+
+              {/* Dados do cupom */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="material-symbols-outlined text-[18px] text-[#4c5e86]">store</span>
+                  <h4 className="text-[14px] font-bold text-[#041a3f]" style={{ fontFamily: 'Plus Jakarta Sans' }}>Dados do cupom</h4>
+                  <span className="ml-auto text-[11px] text-[#737686]">Preenchido automaticamente ou manualmente</span>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <input placeholder="Fornecedor / Razão social" value={receiptForm.supplierName} onChange={(e) => setReceiptForm({ ...receiptForm, supplierName: e.target.value })} className="input-control" />
+                  <input placeholder="Nome fantasia" value={receiptForm.tradeName} onChange={(e) => setReceiptForm({ ...receiptForm, tradeName: e.target.value })} className="input-control" />
+                  <input placeholder="CPF/CNPJ" value={receiptForm.documentNumber} onChange={(e) => setReceiptForm({ ...receiptForm, documentNumber: e.target.value })} className="input-control" />
+                  <input type="date" value={receiptForm.purchaseDate} onChange={(e) => setReceiptForm({ ...receiptForm, purchaseDate: e.target.value })} className="input-control" />
+                  <select value={receiptForm.paymentMethod} onChange={(e) => setReceiptForm({ ...receiptForm, paymentMethod: e.target.value })} className="input-control">
+                    <option value="PIX">PIX</option>
+                    <option value="CASH">Dinheiro</option>
+                    <option value="DEBIT_CARD">Cartão de Débito</option>
+                    <option value="CREDIT_CARD">Cartão de Crédito</option>
+                  </select>
+                  {receiptForm.paymentMethod === 'CREDIT_CARD' && (
+                    <input maxLength={4} placeholder="4 últimos dígitos do cartão" value={receiptForm.cardLast4}
+                      onChange={(e) => setReceiptForm({ ...receiptForm, cardLast4: e.target.value.replace(/\D/g,'').slice(0,4) })} className="input-control" />
+                  )}
+                  <input type="number" placeholder={`Valor total ${receiptTotal ? '— ' + formatCurrency(receiptTotal) + ' calculado' : ''}`}
+                    value={receiptForm.totalAmount} onChange={(e) => setReceiptForm({ ...receiptForm, totalAmount: e.target.value })} className="input-control sm:col-span-2" />
+                  <label className="flex items-center gap-2 text-[12.5px] font-medium text-[#4c5e86] sm:col-span-2 cursor-pointer">
+                    <input type="checkbox" checked={receiptForm.createFinancialDebit}
+                      onChange={(e) => setReceiptForm({ ...receiptForm, createFinancialDebit: e.target.checked })} className="rounded" />
+                    Criar lançamento de débito no Financeiro
+                  </label>
+                </div>
+              </div>
+
+              {/* Adicionar produto */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="material-symbols-outlined text-[18px] text-[#4c5e86]">add_box</span>
+                  <h4 className="text-[14px] font-bold text-[#041a3f]" style={{ fontFamily: 'Plus Jakarta Sans' }}>Adicionar produto manualmente</h4>
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <input placeholder="Nome do produto *" value={itemForm.productName} onChange={(e) => setItemForm({ ...itemForm, productName: e.target.value })} className="input-control sm:col-span-2" />
+                  <input type="number" placeholder="Valor unitário *" value={itemForm.unitPrice} onChange={(e) => setItemForm({ ...itemForm, unitPrice: e.target.value })} className="input-control" />
+                  <input type="number" placeholder="Quantidade" value={itemForm.quantity} onChange={(e) => setItemForm({ ...itemForm, quantity: e.target.value })} className="input-control" />
+                  <input placeholder="Unidade (un, kg, L…)" value={itemForm.unit} onChange={(e) => setItemForm({ ...itemForm, unit: e.target.value })} className="input-control" />
+                  <input type="number" placeholder="Desconto (R$)" value={itemForm.discount} onChange={(e) => setItemForm({ ...itemForm, discount: e.target.value })} className="input-control" />
+                </div>
+                <button type="button" onClick={addItem}
+                  disabled={!itemForm.productName || !itemForm.unitPrice}
+                  className="mt-4 btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span className="material-symbols-outlined text-[16px]">add</span>
+                  Adicionar item
+                </button>
+              </div>
+            </div>
+
+            {/* Right: items list + save */}
+            <div className="glass-card p-6 flex flex-col">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-[18px] text-[#4c5e86]">shopping_basket</span>
+                <h4 className="text-[14px] font-bold text-[#041a3f]" style={{ fontFamily: 'Plus Jakarta Sans' }}>
+                  Itens do cupom
+                </h4>
+                {items.length > 0 && (
+                  <span className="ml-auto text-[12px] font-bold text-[#0057D9]">{formatCurrency(receiptTotal)}</span>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2 min-h-[120px]">
+                {items.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-8 text-center">
+                    <span className="material-symbols-outlined text-[36px] text-[#c3c6d7] mb-2">receipt</span>
+                    <p className="text-[12.5px] font-medium text-[#737686]">Nenhum item ainda</p>
+                    <p className="text-[11.5px] text-[#c3c6d7] mt-0.5">Importe via QR Code, PDF ou adicione manualmente</p>
+                  </div>
+                ) : items.map((item, index) => (
+                  <div key={`${item.productName}-${index}`}
+                    className="flex items-center gap-3 rounded-xl p-3"
+                    style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(195,198,215,0.35)' }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-semibold text-[#191c1e] truncate">{item.productName}</p>
+                      <p className="text-[11.5px] text-[#4c5e86]">
+                        {formatCurrency(Number(item.unitPrice))} × {item.quantity} {item.unit}
+                        {item.discount ? ` · -${formatCurrency(Number(item.discount))}` : ''}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => setItems((cur) => cur.filter((_, i) => i !== index))}
+                      className="p-1.5 rounded-xl text-[#EF4444] hover:bg-red-50 transition flex-shrink-0">
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => createReceipt.mutate()}
+                disabled={items.length === 0 || createReceipt.isPending}
+                className="btn-primary mt-5 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[16px]">
+                  {createReceipt.isPending ? 'hourglass_empty' : 'save'}
+                </span>
+                {createReceipt.isPending ? 'Salvando...' : `Salvar cupom${receiptTotal ? ' · ' + formatCurrency(receiptTotal) : ''}`}
+              </button>
             </div>
           </div>
         </section>
